@@ -1,29 +1,10 @@
 import Link from "next/link";
 import Button from "@/components/ui/Button";
 import LocaleSwitcher from "@/components/shell/LocaleSwitcher";
+import { getDictionary } from "@/lib/dictionaries";
 
 // Public site layout: clean header + footer on the calm surface.
-// Structure + tokens only — final marketing design comes later.
-
-const NAV = [
-  { href: "/how-it-works", label: "How it works" },
-  { href: "/specialties", label: "Specialties" },
-  { href: "/hospitals", label: "Hospitals" },
-  { href: "/pledge", label: "The Pledge" },
-  { href: "/for-clinicians", label: "For clinicians" },
-];
-
-const FOOTER_LINKS = [
-  { href: "/legal/privacy", label: "Privacy" },
-  { href: "/legal/cookies", label: "Cookies" },
-  { href: "/legal/terms", label: "Terms" },
-  { href: "/legal/acceptable-use", label: "Acceptable use" },
-  { href: "/legal/accessibility", label: "Accessibility" },
-  { href: "/security", label: "Security" },
-  { href: "/legal/sub-processors", label: "Sub-processors" },
-  { href: "/contact", label: "Contact" },
-  { href: "/faq", label: "FAQ" },
-];
+// Nav + footer labels come from the locale dictionary.
 
 export default async function PublicLayout({
   children,
@@ -34,6 +15,27 @@ export default async function PublicLayout({
 }) {
   const { locale } = await params;
   const base = `/${locale}`;
+  const t = getDictionary(locale);
+
+  const nav = [
+    { href: "/how-it-works", label: t.nav.howItWorks },
+    { href: "/specialties", label: t.nav.specialties },
+    { href: "/hospitals", label: t.nav.hospitals },
+    { href: "/pledge", label: t.nav.pledge },
+    { href: "/for-clinicians", label: t.nav.forClinicians },
+  ];
+
+  const footerLinks = [
+    { href: "/legal/privacy", label: t.footer.privacy },
+    { href: "/legal/cookies", label: t.footer.cookies },
+    { href: "/legal/terms", label: t.footer.terms },
+    { href: "/legal/acceptable-use", label: t.footer.acceptableUse },
+    { href: "/legal/accessibility", label: t.footer.accessibility },
+    { href: "/security", label: t.footer.security },
+    { href: "/legal/sub-processors", label: t.footer.subProcessors },
+    { href: "/contact", label: t.footer.contact },
+    { href: "/faq", label: t.footer.faq },
+  ];
 
   return (
     <div className="flex min-h-dvh flex-col">
@@ -47,7 +49,7 @@ export default async function PublicLayout({
           </Link>
 
           <nav aria-label="Site" className="hidden items-center gap-1 lg:flex">
-            {NAV.map((item) => (
+            {nav.map((item) => (
               <Link
                 key={item.href}
                 href={`${base}${item.href}`}
@@ -61,10 +63,10 @@ export default async function PublicLayout({
           <div className="flex items-center gap-2">
             <LocaleSwitcher current={locale} />
             <Button variant="ghost" size="sm" href={`${base}/login`} className="hidden sm:inline-flex">
-              Log in
+              {t.nav.login}
             </Button>
             <Button size="sm" href={`${base}/register`}>
-              Register
+              {t.nav.register}
             </Button>
           </div>
         </div>
@@ -75,7 +77,7 @@ export default async function PublicLayout({
       <footer className="border-t border-line bg-card">
         <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-8 md:px-8">
           <nav aria-label="Legal" className="flex flex-wrap gap-x-5 gap-y-2">
-            {FOOTER_LINKS.map((item) => (
+            {footerLinks.map((item) => (
               <Link
                 key={item.href}
                 href={`${base}${item.href}`}
@@ -86,8 +88,7 @@ export default async function PublicLayout({
             ))}
           </nav>
           <p className="text-xs text-ink-muted">
-            © {new Date().getFullYear()} LibaMed Ltd, Cardiff, Wales. Clinician-led
-            international referrals — patients cannot create or submit cases.
+            © {new Date().getFullYear()} {t.footer.rights}
           </p>
         </div>
       </footer>

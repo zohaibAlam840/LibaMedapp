@@ -8,10 +8,11 @@ import { CorridorBadge, FactPill } from "@/components/ui/Badges";
 import { AccordionItem } from "@/components/ui/Accordion";
 import HeroPreview from "@/components/marketing/HeroPreview";
 import { DEMO_HOSPITALS } from "@/lib/demo";
-import { PATHWAY_STEPS, PLEDGE_COMMITMENTS, FAQS } from "@/lib/marketing";
+import { getDictionary } from "@/lib/dictionaries";
 
-// 9A · Home (spec V2 page 1): hero → value cards → pathway → corridor band →
-// pledge teaser → specialties → security strip → FAQ preview → CTA band.
+// 9A · Home (spec V2 page 1) — fully localised via the dictionary.
+const VALUE_ICONS = [Stethoscope, ShieldCheck, Lock];
+
 export default async function Page({
   params,
 }: {
@@ -19,12 +20,13 @@ export default async function Page({
 }) {
   const { locale } = await params;
   const base = `/${locale}`;
+  const t = getDictionary(locale);
+  const h = t.home;
 
   return (
     <div>
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-line">
-        {/* Subtle layered background — gradient wash + dotted grid, no photos */}
         <div
           aria-hidden
           className="pointer-events-none absolute -end-40 -top-40 size-[560px] rounded-full bg-[radial-gradient(circle,rgba(59,130,214,0.12),transparent_60%)]"
@@ -34,37 +36,29 @@ export default async function Page({
           className="pointer-events-none absolute inset-0 opacity-[0.5] [background-image:radial-gradient(var(--color-line)_1px,transparent_1px)] [background-size:22px_22px] [mask-image:radial-gradient(ellipse_at_top,black,transparent_70%)]"
         />
         <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-4 py-16 md:px-8 md:py-24 lg:grid-cols-[1.05fr_0.95fr]">
-          {/* Left: copy */}
           <div>
             <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-accent-border bg-accent-soft px-3.5 py-1.5 text-[13px] font-medium text-accent">
               <span className="size-1.5 rounded-full bg-accent" />
-              Clinician-to-clinician referrals only
+              {h.eyebrow}
             </p>
             <h1 className="text-4xl font-semibold leading-[1.05] tracking-tight text-ink md:text-5xl lg:text-[3.25rem]">
-              International referrals, without leaving your patient&rsquo;s side
+              {h.title}
             </h1>
             <p className="mt-5 max-w-[46ch] text-lg leading-relaxed text-ink-secondary">
-              Refer to a named specialist at an accredited hospital abroad — with
-              consent, security, and a structured summary back to UK care. No
-              email, ever.
+              {h.subhead}
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button size="lg" href={`${base}/register`}>
-                Register as a clinician
+                {h.ctaRegister}
                 <ArrowRight aria-hidden className="size-4 rtl:-scale-x-100" />
               </Button>
               <Button size="lg" variant="secondary" href={`${base}/how-it-works`}>
-                How it works
+                {h.ctaHow}
               </Button>
             </div>
 
-            {/* Trust stats */}
             <dl className="mt-10 flex flex-wrap gap-x-8 gap-y-4 border-t border-line pt-6">
-              {[
-                { n: "4", l: "live corridors" },
-                { n: "5-day", l: "care handback" },
-                { n: "100%", l: "clinician-led" },
-              ].map((s) => (
+              {h.stats.map((s) => (
                 <div key={s.l}>
                   <dt className="text-2xl font-semibold tracking-tight text-ink">{s.n}</dt>
                   <dd className="text-[13px] text-ink-secondary">{s.l}</dd>
@@ -73,7 +67,6 @@ export default async function Page({
             </dl>
           </div>
 
-          {/* Right: product preview */}
           <div className="hidden lg:block">
             <HeroPreview />
           </div>
@@ -83,58 +76,39 @@ export default async function Page({
       {/* Value cards */}
       <section className="mx-auto max-w-6xl px-4 py-20 md:px-8">
         <div className="grid gap-4 md:grid-cols-3">
-          {[
-            {
-              icon: Stethoscope,
-              title: "Clinician-led, always",
-              text: "Only a verified referring doctor can create a case. Patients never book treatment through LibaMed.",
-            },
-            {
-              icon: ShieldCheck,
-              title: "Named specialists, vetted hospitals",
-              text: "Every referral goes to a named receiving specialist at an accredited partner hospital — never a general inbox.",
-            },
-            {
-              icon: Lock,
-              title: "Protected to the stricter standard",
-              text: "Records are encrypted and stored under the stricter of both countries' rules — including HDS-certified hosting for France.",
-            },
-          ].map(({ icon: Icon, title, text }) => (
-            <Card
-              key={title}
-              className="p-6 ring-1 ring-transparent transition-all duration-150 ease-out hover:-translate-y-1 hover:shadow-elevated hover:ring-accent-border"
-            >
-              <span className="mb-5 flex size-12 items-center justify-center rounded-2xl bg-accent-soft text-accent">
-                <Icon aria-hidden className="size-5.5" />
-              </span>
-              <h2 className="text-lg font-semibold text-ink">{title}</h2>
-              <p className="mt-2 text-sm leading-relaxed text-ink-secondary">{text}</p>
-            </Card>
-          ))}
+          {h.values.map((v, i) => {
+            const Icon = VALUE_ICONS[i] ?? Stethoscope;
+            return (
+              <Card
+                key={v.title}
+                className="p-6 ring-1 ring-transparent transition-all duration-150 ease-out hover:-translate-y-1 hover:shadow-elevated hover:ring-accent-border"
+              >
+                <span className="mb-5 flex size-12 items-center justify-center rounded-2xl bg-accent-soft text-accent">
+                  <Icon aria-hidden className="size-5.5" />
+                </span>
+                <h2 className="text-lg font-semibold text-ink">{v.title}</h2>
+                <p className="mt-2 text-sm leading-relaxed text-ink-secondary">{v.text}</p>
+              </Card>
+            );
+          })}
         </div>
       </section>
 
       {/* Pathway */}
       <section className="border-y border-line bg-card">
         <div className="mx-auto max-w-6xl px-4 py-20 md:px-8">
-          <h2 className="mb-2 text-2xl font-semibold text-ink">
-            One loop, start to finish
-          </h2>
-          <p className="mb-10 max-w-[60ch] text-[15px] text-ink-secondary">
-            The whole referral happens in one place — no email threads, no
-            couriered discs, no chasing.
-          </p>
-          <NumberedStepStrip steps={PATHWAY_STEPS} />
+          <h2 className="mb-2 text-2xl font-semibold text-ink">{h.pathwayTitle}</h2>
+          <p className="mb-10 max-w-[60ch] text-[15px] text-ink-secondary">{h.pathwayLede}</p>
+          <NumberedStepStrip
+            steps={h.pathway.map((s) => ({ title: s.title, description: s.description }))}
+          />
         </div>
       </section>
 
       {/* Corridor band */}
       <section className="mx-auto max-w-6xl px-4 py-20 md:px-8">
-        <h2 className="mb-2 text-2xl font-semibold text-ink">Four corridors at launch</h2>
-        <p className="mb-8 max-w-[60ch] text-[15px] text-ink-secondary">
-          Each corridor carries its own data-protection rules, applied
-          automatically to every case.
-        </p>
+        <h2 className="mb-2 text-2xl font-semibold text-ink">{h.corridorsTitle}</h2>
+        <p className="mb-8 max-w-[60ch] text-[15px] text-ink-secondary">{h.corridorsLede}</p>
         <div className="flex flex-wrap gap-3">
           <CorridorBadge code="IL" label="UK → Israel" />
           <CorridorBadge code="FR" label="UK → France" residency="EEA · HDS" />
@@ -142,13 +116,13 @@ export default async function Page({
           <CorridorBadge code="CH" label="UK → Switzerland" />
         </div>
         <div className="mt-6 flex flex-wrap gap-3">
-          {DEMO_HOSPITALS.map((h) => (
+          {DEMO_HOSPITALS.map((hosp) => (
             <Link
-              key={h.id}
-              href={`${base}/hospitals/${h.id}`}
+              key={hosp.id}
+              href={`${base}/hospitals/${hosp.id}`}
               className="rounded-full border border-line bg-card px-4 py-2 text-sm text-ink-secondary transition-colors hover:border-line-strong hover:text-ink"
             >
-              {h.name}
+              {hosp.name}
             </Link>
           ))}
         </div>
@@ -158,22 +132,20 @@ export default async function Page({
       <section className="border-y border-line bg-card">
         <div className="mx-auto grid max-w-6xl gap-10 px-4 py-20 md:grid-cols-2 md:px-8">
           <div>
-            <h2 className="text-2xl font-semibold text-ink">The LibaMed Pledge</h2>
+            <h2 className="text-2xl font-semibold text-ink">{h.pledgeTitle}</h2>
             <p className="mt-3 max-w-[50ch] text-[15px] leading-relaxed text-ink-secondary">
-              Eight commitments the platform is built to keep — from four-stage
-              hospital vetting to cost transparency and a guaranteed handback to
-              UK care.
+              {h.pledgeBody}
             </p>
             <Button variant="secondary" href={`${base}/pledge`} className="mt-6">
-              Read the full Pledge
+              {h.pledgeCta}
               <ArrowRight aria-hidden className="size-4 rtl:-scale-x-100" />
             </Button>
           </div>
           <ul className="grid content-start gap-2.5">
-            {PLEDGE_COMMITMENTS.map((c) => (
-              <li key={c.title} className="flex items-start gap-2.5 text-sm text-ink">
+            {h.pledgeItems.map((item) => (
+              <li key={item} className="flex items-start gap-2.5 text-sm text-ink">
                 <Check aria-hidden className="mt-0.5 size-4 shrink-0 text-success-text" />
-                {c.title}
+                {item}
               </li>
             ))}
           </ul>
@@ -183,12 +155,12 @@ export default async function Page({
       {/* Specialties preview */}
       <section className="mx-auto max-w-6xl px-4 py-20 md:px-8">
         <div className="mb-6 flex items-center justify-between gap-4">
-          <h2 className="text-2xl font-semibold text-ink">Specialties</h2>
+          <h2 className="text-2xl font-semibold text-ink">{h.specialtiesTitle}</h2>
           <Link
             href={`${base}/specialties`}
             className="text-sm font-medium text-accent hover:underline"
           >
-            View all
+            {h.viewAll}
           </Link>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -205,23 +177,23 @@ export default async function Page({
       {/* Security strip */}
       <section className="border-y border-line bg-card">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-3 px-4 py-10 md:px-8">
-          <FactPill>AES-256 encryption at rest</FactPill>
-          <FactPill>TLS 1.3 in transit</FactPill>
-          <FactPill>HDS-certified EEA hosting for France</FactPill>
+          {h.security.map((fact) => (
+            <FactPill key={fact}>{fact}</FactPill>
+          ))}
           <Link
             href={`${base}/security`}
             className="text-sm font-medium text-accent hover:underline"
           >
-            Security overview
+            {h.securityLink}
           </Link>
         </div>
       </section>
 
       {/* FAQ preview */}
       <section className="mx-auto max-w-3xl px-4 py-20 md:px-8">
-        <h2 className="mb-6 text-2xl font-semibold text-ink">Common questions</h2>
+        <h2 className="mb-6 text-2xl font-semibold text-ink">{h.faqTitle}</h2>
         <div className="flex flex-col gap-3">
-          {FAQS.slice(0, 4).map((f) => (
+          {h.faqs.map((f) => (
             <AccordionItem key={f.q} question={f.q}>
               {f.a}
             </AccordionItem>
@@ -231,18 +203,16 @@ export default async function Page({
           href={`${base}/faq`}
           className="mt-5 inline-block text-sm font-medium text-accent hover:underline"
         >
-          All questions &amp; glossary
+          {h.faqAll}
         </Link>
       </section>
 
       {/* CTA band */}
       <section className="bg-navy">
         <div className="mx-auto flex max-w-6xl flex-col items-center gap-6 px-4 py-16 text-center md:px-8">
-          <h2 className="max-w-2xl text-3xl font-semibold text-white">
-            Give your patient options beyond the waiting list
-          </h2>
+          <h2 className="max-w-2xl text-3xl font-semibold text-white">{h.ctaTitle}</h2>
           <Button size="lg" variant="accent" href={`${base}/register`}>
-            Register as a clinician
+            {h.ctaButton}
             <ArrowRight aria-hidden className="size-4 rtl:-scale-x-100" />
           </Button>
         </div>

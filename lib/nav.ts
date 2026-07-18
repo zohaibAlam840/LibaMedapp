@@ -26,6 +26,8 @@ import type { Role } from "@/lib/rbac";
 export interface NavItem {
   href: string;
   label: string;
+  /** Shorter label for the mobile tab bar (falls back to `label`). */
+  short?: string;
   icon: LucideIcon;
   /** Unread/new count badge. */
   badge?: number;
@@ -35,45 +37,45 @@ export interface NavItem {
 
 const NAV_BY_ROLE: Record<Role, NavItem[]> = {
   referring: [
-    { href: "/referring", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/referring/intake/patient", label: "New referral", icon: FilePlus },
-    { href: "/referring/cases", label: "My cases", icon: Folder },
-    { href: "/referring/messages", label: "Messages", icon: MessageSquare, badge: 2 },
-    { href: "/referring/consent", label: "Consent", icon: ShieldCheck },
+    { href: "/referring", label: "Dashboard", short: "Home", icon: LayoutDashboard },
+    { href: "/referring/intake/patient", label: "New referral", short: "New", icon: FilePlus },
+    { href: "/referring/cases", label: "My cases", short: "Cases", icon: Folder },
+    { href: "/referring/messages", label: "Messages", short: "Messages", icon: MessageSquare, badge: 2 },
+    { href: "/referring/consent", label: "Consent", short: "Consent", icon: ShieldCheck },
   ],
   receiving: [
-    { href: "/receiving", label: "My queue", icon: Inbox, badge: 2 },
-    { href: "/receiving/cases", label: "Active cases", icon: FolderOpen },
-    { href: "/receiving/messages", label: "Messages", icon: MessageSquare, badge: 1 },
-    { href: "/receiving/responses", label: "Responses", icon: FileCheck },
+    { href: "/receiving", label: "My queue", short: "Queue", icon: Inbox, badge: 2 },
+    { href: "/receiving/cases", label: "Active cases", short: "Cases", icon: FolderOpen },
+    { href: "/receiving/messages", label: "Messages", short: "Messages", icon: MessageSquare, badge: 1 },
+    { href: "/receiving/responses", label: "Responses", short: "Replies", icon: FileCheck },
   ],
   coordinator: [
-    { href: "/receiving/coordinator", label: "Overview", icon: LayoutDashboard },
-    { href: "/receiving", label: "Hospital queue", icon: Inbox },
-    { href: "/receiving/specialists", label: "Specialists", icon: Users },
-    { href: "/receiving/overdue", label: "Overdue", icon: AlertTriangle, badge: 1 },
+    { href: "/receiving/coordinator", label: "Overview", short: "Overview", icon: LayoutDashboard },
+    { href: "/receiving", label: "Hospital queue", short: "Queue", icon: Inbox },
+    { href: "/receiving/specialists", label: "Specialists", short: "Staff", icon: Users },
+    { href: "/receiving/overdue", label: "Overdue", short: "Overdue", icon: AlertTriangle, badge: 1 },
   ],
   caseManager: [
-    { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/admin/cases", label: "All cases", icon: Folder },
-    { href: "/admin/corridors", label: "Corridors", icon: Globe },
-    { href: "/admin/hospitals", label: "Hospitals", icon: Building2 },
-    { href: "/admin/attention", label: "Attention", icon: AlertTriangle, badge: 3 },
+    { href: "/admin", label: "Dashboard", short: "Home", icon: LayoutDashboard },
+    { href: "/admin/cases", label: "All cases", short: "Cases", icon: Folder },
+    { href: "/admin/corridors", label: "Corridors", short: "Corridors", icon: Globe },
+    { href: "/admin/hospitals", label: "Hospitals", short: "Hospitals", icon: Building2 },
+    { href: "/admin/attention", label: "Attention", short: "Alerts", icon: AlertTriangle, badge: 3 },
   ],
   admin: [
-    { href: "/admin", label: "Dashboard", icon: LayoutDashboard, group: "Operate" },
-    { href: "/admin/cases", label: "Cases", icon: Folder, group: "Operate" },
-    { href: "/admin/hospitals", label: "Hospitals", icon: Building2, group: "Configure" },
-    { href: "/admin/clinicians", label: "Clinicians", icon: Stethoscope, group: "Configure" },
-    { href: "/admin/corridors", label: "Corridors", icon: Globe, group: "Configure" },
-    { href: "/admin/users", label: "Users & roles", icon: Users, group: "Govern" },
-    { href: "/admin/audit", label: "Audit log", icon: ScrollText, group: "Govern" },
-    { href: "/admin/consent", label: "Consent", icon: FileCheck, group: "Govern" },
-    { href: "/admin/retention", label: "Retention & DSAR", icon: Archive, group: "Govern" },
+    { href: "/admin", label: "Dashboard", short: "Home", icon: LayoutDashboard, group: "Operate" },
+    { href: "/admin/cases", label: "Cases", short: "Cases", icon: Folder, group: "Operate" },
+    { href: "/admin/hospitals", label: "Hospitals", short: "Hospitals", icon: Building2, group: "Configure" },
+    { href: "/admin/clinicians", label: "Clinicians", short: "Staff", icon: Stethoscope, group: "Configure" },
+    { href: "/admin/corridors", label: "Corridors", short: "Corridors", icon: Globe, group: "Configure" },
+    { href: "/admin/users", label: "Users & roles", short: "Users", icon: Users, group: "Govern" },
+    { href: "/admin/audit", label: "Audit log", short: "Audit", icon: ScrollText, group: "Govern" },
+    { href: "/admin/consent", label: "Consent", short: "Consent", icon: FileCheck, group: "Govern" },
+    { href: "/admin/retention", label: "Retention & DSAR", short: "Data", icon: Archive, group: "Govern" },
   ],
   // Public shell isn't used inside the app; fall back to referring nav.
   public: [
-    { href: "/referring", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/referring", label: "Dashboard", short: "Home", icon: LayoutDashboard },
     { href: "/hospitals", label: "Hospitals", icon: Building2 },
     { href: "/faq", label: "Help", icon: FileText },
   ],

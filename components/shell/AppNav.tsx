@@ -262,10 +262,10 @@ export function BottomTabs({ locale, role }: { locale: string; role: Role }) {
             onClick={() => setMoreOpen(true)}
             aria-label="More"
             aria-expanded={moreOpen}
-            className="flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 text-[11px] text-ink-secondary"
+            className="flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-0.5 text-[11px] text-ink-secondary"
           >
             <MoreHorizontal aria-hidden className="size-5" />
-            More
+            <span className="w-full truncate text-center">More</span>
           </button>
         )}
       </nav>
@@ -340,7 +340,7 @@ function TabLink({
       href={`/${locale}${item.href}`}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "relative flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 text-[11px]",
+        "relative flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-0.5 text-[11px]",
         active ? "font-medium text-accent" : "text-ink-secondary",
       )}
     >
@@ -348,7 +348,7 @@ function TabLink({
         <Icon aria-hidden className="size-5" />
         {item.badge ? <CountBadge count={item.badge} floating /> : null}
       </span>
-      {item.label}
+      <span className="w-full truncate text-center">{item.short ?? item.label}</span>
     </Link>
   );
 }
