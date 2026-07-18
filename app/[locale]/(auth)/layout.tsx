@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
+import LocaleSwitcher from "@/components/shell/LocaleSwitcher";
 
 // Auth layout (design spec §6): centered card on the calm page surface —
-// logo, single column, no decoration.
+// logo, single column, no decoration. Language switcher pinned top-right.
 
 export default async function AuthLayout({
   children,
@@ -14,7 +15,11 @@ export default async function AuthLayout({
   const { locale } = await params;
 
   return (
-    <div className="flex min-h-dvh flex-1 flex-col items-center justify-center p-4">
+    <div className="relative flex min-h-dvh flex-1 flex-col items-center justify-center p-4">
+      <div className="absolute end-4 top-4">
+        <LocaleSwitcher current={locale} />
+      </div>
+
       <Link
         href={`/${locale}`}
         className="mb-6 flex items-center gap-2.5 text-xl font-semibold text-ink"

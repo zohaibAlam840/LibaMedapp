@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Button from "@/components/ui/Button";
+import LocaleSwitcher from "@/components/shell/LocaleSwitcher";
 
 // Public site layout: clean header + footer on the calm surface.
 // Structure + tokens only — final marketing design comes later.
@@ -58,7 +59,8 @@ export default async function PublicLayout({
           </nav>
 
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" href={`${base}/login`}>
+            <LocaleSwitcher current={locale} />
+            <Button variant="ghost" size="sm" href={`${base}/login`} className="hidden sm:inline-flex">
               Log in
             </Button>
             <Button size="sm" href={`${base}/register`}>
