@@ -17,7 +17,7 @@ export function AccordionItem({
     <details
       open={defaultOpen || undefined}
       className={cn(
-        "group rounded-card border border-line bg-card transition-colors open:border-accent-border",
+        "accordion group rounded-card border border-line bg-card transition-colors open:border-accent-border",
         className,
       )}
     >

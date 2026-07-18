@@ -100,6 +100,16 @@
 
 html {
   height: 100%;
+  /* Let height/width keywords (auto) participate in transitions so the
+   * <details> accordions can animate open. Chromium 131+. */
+  interpolate-size: allow-keywords;
+}
+
+/* Smooth in-page anchor jumps (FAQ categories, glossary A–Z), motion-safe. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
 body {
@@ -122,6 +132,28 @@ input[type="checkbox"],
 input[type="radio"],
 progress {
   accent-color: var(--accent);
+}
+
+/*
+ * Accordion (native <details>) — animate the reveal instead of snapping.
+ * Uses ::details-content (Chromium 131+); older engines just skip the
+ * transition and open instantly, so behaviour degrades cleanly.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  details.accordion::details-content {
+    block-size: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition:
+      block-size 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      opacity 0.25s ease,
+      content-visibility 0.3s allow-discrete;
+  }
+
+  details.accordion[open]::details-content {
+    block-size: auto;
+    opacity: 1;
+  }
 }
 
 /* Progress / chart gradient (spec §2.1). */
