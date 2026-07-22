@@ -1,4 +1,5 @@
-import { FolderLock, Plus } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, FolderLock, Plus, TriangleAlert } from "lucide-react";
 import { Card, CardTitle, SectionLabel } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Checkbox from "@/components/ui/Checkbox";
@@ -8,6 +9,7 @@ import SegmentedControl from "@/components/ui/SegmentedControl";
 import StatCard from "@/components/ui/StatCard";
 import StatusChip from "@/components/ui/StatusChip";
 import { DEMO_CASES, DEMO_USER } from "@/lib/demo";
+import { getReferralCompliance, isHandbackOverdue } from "@/lib/referral";
 
 // 9C · Referring dashboard (#29) — greeting + modest stat cards + filterable
 // case list (design spec §3.4/§6). ≤3 clicks from login to a new referral:
@@ -22,6 +24,12 @@ export default async function Page({
   const actionNeeded = DEMO_CASES.filter(
     (c) => c.status === "plan-received" || (c.unread ?? 0) > 0,
   );
+
+  // Continuity-of-care: cases whose care summary hasn't come back in time (item 3).
+  const overdueHandbacks = DEMO_CASES.filter((c) => {
+    const r = getReferralCompliance(c.id);
+    return r && isHandbackOverdue(r.handback);
+  });
 
   return (
     <div className="flex flex-col gap-6">
@@ -40,6 +48,30 @@ export default async function Page({
           New referral
         </Button>
       </div>
+
+      {/* Continuity-of-care alert (item 3): overdue care handbacks */}
+      {overdueHandbacks.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3 rounded-card border border-danger-text/20 bg-danger-bg/60 p-4">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-danger-bg text-danger-text">
+            <TriangleAlert aria-hidden className="size-4.5" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-[15px] font-semibold text-ink">
+              {overdueHandbacks.length} case{overdueHandbacks.length > 1 ? "s" : ""} overdue for a care summary
+            </p>
+            <p className="text-[13px] text-ink-secondary">
+              The overseas hospital hasn&rsquo;t returned the discharge summary within the agreed window.
+            </p>
+          </div>
+          <Link
+            href={`/${locale}/referring/cases/${overdueHandbacks[0].id}`}
+            className="inline-flex items-center gap-1.5 text-[13px] font-medium text-accent hover:underline"
+          >
+            Review
+            <ArrowRight aria-hidden className="size-4 rtl:-scale-x-100" />
+          </Link>
+        </div>
+      )}
 
       {/* Stat cards — modest in V1 (analytics are V1.5) */}
       <div className="grid gap-4 sm:grid-cols-3">

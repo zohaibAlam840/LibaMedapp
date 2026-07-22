@@ -1,16 +1,22 @@
 import Link from "next/link";
-import { FileText, Globe2, ScrollText, Stethoscope, UserRound } from "lucide-react";
+import { FileText, Globe2, ScrollText, ShieldAlert, Stethoscope, UserRound } from "lucide-react";
 import WizardShell from "@/components/wizard/WizardShell";
 import DetailPanelRow from "@/components/ui/DetailPanelRow";
+import NoFeeNotice from "@/components/ui/NoFeeNotice";
+import TransferBasisNotice from "@/components/ui/TransferBasisNotice";
 import { DEMO_DOCUMENTS } from "@/lib/demo";
+import { getCorridor } from "@/lib/corridors";
 
-// 9C · Intake step 6 — review & submit (acceptance §14.2).
+// 9C · Intake step 7 — review & submit (acceptance §14.2). Now surfaces the
+// NHS non-substitution declaration (item 1) and data-transfer basis (item 5)
+// before the GP commits.
 export default async function Page({
   params,
 }: {
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+  const corridor = getCorridor("israel");
   const edit = (step: string) => (
     <Link
       href={`/${locale}/referring/intake/${step}`}
@@ -46,6 +52,12 @@ export default async function Page({
           trailing={edit("corridor")}
         />
         <DetailPanelRow
+          icon={ShieldAlert}
+          label="NHS non-substitution"
+          value="NHS wait exceeds clinical threshold · justification recorded"
+          trailing={edit("declaration")}
+        />
+        <DetailPanelRow
           icon={FileText}
           label="Documents"
           value={`${DEMO_DOCUMENTS.length} attached, incl. 1 DICOM series`}
@@ -53,15 +65,21 @@ export default async function Page({
         />
         <DetailPanelRow
           icon={ScrollText}
-          label="Consent"
-          value="5 of 5 items confirmed · wording v2"
+          label="Patient consent"
+          value="5 of 5 items confirmed · v2026-07"
           trailing={edit("consent")}
         />
       </div>
 
+      <div className="mt-4 flex flex-col gap-3">
+        <TransferBasisNotice corridor={corridor} />
+        <NoFeeNotice compact />
+      </div>
+
       <p className="mt-4 text-[13px] text-ink-muted">
         On submit: records are stored in the corridor&rsquo;s region, the named
-        specialist is notified, and every step is written to the audit trail.
+        specialist is notified, and every step — including this declaration and
+        consent — is written to the immutable audit trail.
       </p>
     </WizardShell>
   );

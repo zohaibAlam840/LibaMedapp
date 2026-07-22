@@ -1,9 +1,10 @@
-import { ArrowRight, BadgeCheck, Check, Clock3, Lock, MessageSquareText } from "lucide-react";
+import { ArrowRight, BadgeCheck, Check, Clock3, HandCoins, Lock, MessageSquareText } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import NumberedStepStrip from "@/components/ui/NumberedStepStrip";
 import { AccordionItem } from "@/components/ui/Accordion";
 import { FAQS } from "@/lib/marketing";
+import { CORRIDOR_LIST } from "@/lib/corridors";
 
 // 9A · For clinicians (spec V2 page 7): hero → benefits → GMC explainer →
 // what you'll need → data handling → FAQ → CTA.
@@ -106,6 +107,52 @@ export default async function Page({
             </a>
           </div>
         </Card>
+      </section>
+
+      <section className="border-y border-line bg-card">
+        <div className="mx-auto max-w-6xl px-4 py-20 md:px-8">
+          <h2 className="mb-2 text-2xl font-semibold text-ink">Referring safely, by design</h2>
+          <p className="mb-8 max-w-[60ch] text-[15px] text-ink-secondary">
+            Two things doctors ask us first: am I paid for this, and where does my
+            patient&rsquo;s data actually go? Both answers are built into the platform.
+          </p>
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card className="p-6">
+              <span className="mb-4 flex size-11 items-center justify-center rounded-full bg-success-bg text-success-text">
+                <HandCoins aria-hidden className="size-5" />
+              </span>
+              <h3 className="text-lg font-semibold text-ink">No referrer fee — ever</h3>
+              <p className="mt-2 text-sm leading-relaxed text-ink-secondary">
+                No commission, payment, or benefit of any kind accrues to you for
+                making a referral. LibaMed is paid by the receiving hospital, never by
+                referral volume — so the clinical decision stays clean, and it&rsquo;s
+                written into our partner contracts.
+              </p>
+            </Card>
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold text-ink">Where each corridor sends data</h3>
+              <p className="mt-1 text-[13px] text-ink-secondary">
+                The legal basis for each transfer — shown to you again before you submit.
+              </p>
+              <ul className="mt-4 flex flex-col divide-y divide-line">
+                {CORRIDOR_LIST.map((c) => (
+                  <li key={c.id} className="flex items-center justify-between gap-3 py-2.5">
+                    <span className="text-sm font-medium text-ink">{c.country}</span>
+                    <span
+                      className={
+                        c.transferBasis === "scc"
+                          ? "rounded-full bg-warning-bg px-2.5 py-0.5 text-[11px] font-semibold text-warning-text"
+                          : "rounded-full bg-success-bg px-2.5 py-0.5 text-[11px] font-semibold text-success-text"
+                      }
+                    >
+                      {c.transferBasis === "scc" ? "Standard Contractual Clauses" : "UK adequacy"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          </div>
+        </div>
       </section>
 
       <section className="border-t border-line bg-card">

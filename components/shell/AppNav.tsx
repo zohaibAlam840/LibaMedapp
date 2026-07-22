@@ -67,7 +67,7 @@ export function Sidebar({
   return (
     <aside
       className={cn(
-        "sticky top-0 hidden h-dvh shrink-0 flex-col border-e border-line bg-card transition-[width] duration-200 md:flex",
+        "sticky top-0 hidden h-dvh shrink-0 flex-col border-e border-line bg-card transition-[width] duration-200 md:flex print:hidden",
         collapsed ? "w-[72px]" : "w-64",
       )}
     >
@@ -251,7 +251,7 @@ export function BottomTabs({ locale, role }: { locale: string; role: Role }) {
     <>
       <nav
         aria-label="Main"
-        className="fixed inset-x-0 bottom-0 z-20 flex border-t border-line bg-card pb-[env(safe-area-inset-bottom)] md:hidden"
+        className="fixed inset-x-0 bottom-0 z-20 flex border-t border-line bg-card pb-[env(safe-area-inset-bottom)] md:hidden print:hidden"
       >
         {tabs.map((item) => (
           <TabLink key={item.href} locale={locale} item={item} active={isActive(item.href)} />

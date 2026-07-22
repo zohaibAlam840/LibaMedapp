@@ -12,6 +12,12 @@ interface WizardShellProps {
   lede?: string;
   /** Persistent summary bar content (chosen values so far). */
   summary?: React.ReactNode;
+  /**
+   * Overrides the default Continue/Submit button in the sticky footer. Used by
+   * steps that gate progress on client-side validation (e.g. the NHS
+   * non-substitution declaration must be complete before continuing).
+   */
+  footerNext?: React.ReactNode;
   children: React.ReactNode;
 }
 
@@ -26,6 +32,7 @@ export default function WizardShell({
   step,
   lede,
   summary,
+  footerNext,
   children,
 }: WizardShellProps) {
   const index = intakeStepIndex(step);
@@ -128,7 +135,9 @@ export default function WizardShell({
           </span>
         </div>
 
-        {next ? (
+        {footerNext ? (
+          footerNext
+        ) : next ? (
           <Button href={`/${locale}${next.href}`} className="flex-1 sm:flex-none">
             Continue
             <ArrowRight aria-hidden className="size-4 rtl:-scale-x-100" />

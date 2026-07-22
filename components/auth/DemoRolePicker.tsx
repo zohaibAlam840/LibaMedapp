@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ArrowRight, ExternalLink } from "lucide-react";
+import { ArrowRight, ExternalLink, UserRound } from "lucide-react";
 import type { Role } from "@/lib/rbac";
 import { ROLE_LABEL, roleHome } from "@/lib/rbac";
 import { DEMO_ROLE_COOKIE, DEMO_USERS, SWITCHABLE_ROLES } from "@/lib/demoRole";
@@ -97,6 +97,47 @@ export default function DemoRolePicker({ locale }: { locale: string }) {
           </div>
         );
       })}
+
+      {/* Patient — a data subject, not a staff role. Read-only, one referral. */}
+      <p className="mt-2 px-1 text-[11px] font-medium uppercase tracking-wider text-ink-muted">
+        Patient
+      </p>
+      <div className="group flex items-stretch overflow-hidden rounded-inner border border-line bg-card transition-colors hover:border-accent-border">
+        <button
+          type="button"
+          onClick={() => {
+            router.push(`/${locale}/portal`);
+            router.refresh();
+          }}
+          className="flex min-w-0 flex-1 items-center gap-3 p-3 text-start transition-colors hover:bg-accent-soft/40"
+        >
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-subtle text-ink-secondary">
+            <UserRound aria-hidden className="size-5" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[15px] font-medium text-ink">
+              Patient (read-only)
+            </span>
+            <span className="block truncate text-[13px] text-ink-secondary">
+              View your own referral — status, consent & documents
+            </span>
+          </span>
+          <ArrowRight
+            aria-hidden
+            className="size-4 shrink-0 text-ink-muted transition-transform group-hover:translate-x-0.5 rtl:-scale-x-100 rtl:group-hover:-translate-x-0.5"
+          />
+        </button>
+        <a
+          href={`/${locale}/portal`}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Open the patient portal in a new tab"
+          title="Open in a new tab"
+          className="flex shrink-0 items-center border-s border-line px-3 text-ink-muted transition-colors hover:bg-subtle hover:text-ink"
+        >
+          <ExternalLink aria-hidden className="size-4" />
+        </a>
+      </div>
     </div>
   );
 }

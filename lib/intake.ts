@@ -13,6 +13,7 @@ export const INTAKE_STEPS: IntakeStep[] = [
   { id: "patient", href: "/referring/intake/patient", title: "Patient details", short: "Patient" },
   { id: "clinical", href: "/referring/intake/clinical", title: "Clinical summary", short: "Clinical" },
   { id: "corridor", href: "/referring/intake/corridor", title: "Destination & specialty", short: "Destination" },
+  { id: "declaration", href: "/referring/intake/declaration", title: "NHS non-substitution declaration", short: "Declaration" },
   { id: "documents", href: "/referring/intake/documents", title: "Documents & imaging", short: "Documents" },
   { id: "consent", href: "/referring/intake/consent", title: "Patient consent", short: "Consent" },
   { id: "review", href: "/referring/intake/review", title: "Review & submit", short: "Review" },

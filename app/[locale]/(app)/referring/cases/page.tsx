@@ -5,8 +5,10 @@ import ListRow from "@/components/ui/ListRow";
 import SearchInput from "@/components/ui/SearchInput";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import StatusChip from "@/components/ui/StatusChip";
+import HandbackBadge from "@/components/ui/HandbackBadge";
 import { CorridorBadge } from "@/components/ui/Badges";
 import { DEMO_CASES } from "@/lib/demo";
+import { getReferralCompliance } from "@/lib/referral";
 
 // Referring · My cases (sidebar aggregation) — full filterable list of the
 // clinician's own cases. Beyond the 67 V1 pages; a navigation landing page.
@@ -47,27 +49,33 @@ export default async function Page({
           </CardTitle>
           <SearchInput placeholder="Search by case or patient reference" className="mb-3" />
           <div className="-mx-2 flex flex-col">
-            {DEMO_CASES.map((c) => (
-              <ListRow
-                key={c.id}
-                href={`/${locale}/referring/cases/${c.id}`}
-                chevron
-                leading={
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent">
-                    <FolderLock aria-hidden className="size-4.5" />
-                  </span>
-                }
-                title={`${c.ref} · ${c.specialty}`}
-                subtitle={`Patient ${c.patientRef} · ${c.hospital}`}
-                meta={c.updated}
-                badge={
-                  <span className="flex items-center gap-2">
-                    <CorridorBadge code={CODE[c.corridor]} label={c.corridorLabel} className="hidden xl:inline-flex" />
-                    <StatusChip status={c.status} />
-                  </span>
-                }
-              />
-            ))}
+            {DEMO_CASES.map((c) => {
+              const record = getReferralCompliance(c.id);
+              return (
+                <ListRow
+                  key={c.id}
+                  href={`/${locale}/referring/cases/${c.id}`}
+                  chevron
+                  leading={
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent">
+                      <FolderLock aria-hidden className="size-4.5" />
+                    </span>
+                  }
+                  title={`${c.ref} · ${c.specialty}`}
+                  subtitle={`Patient ${c.patientRef} · ${c.hospital}`}
+                  meta={c.updated}
+                  badge={
+                    <span className="flex items-center gap-2">
+                      {record && record.handback.state !== "not-due" && (
+                        <HandbackBadge handback={record.handback} className="hidden xl:inline-flex" />
+                      )}
+                      <CorridorBadge code={CODE[c.corridor]} label={c.corridorLabel} className="hidden xl:inline-flex" />
+                      <StatusChip status={c.status} />
+                    </span>
+                  }
+                />
+              );
+            })}
           </div>
         </Card>
 

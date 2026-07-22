@@ -22,7 +22,8 @@ export default async function Page({
           <h1 className="text-[28px] font-semibold text-ink">Partner hospitals</h1>
           <p className="mt-1 text-[15px] text-ink-secondary">
             Accreditation, specialties, and named clinicians — editable here,
-            no developer needed.
+            no developer needed. Toggle a partner <b className="font-medium text-ink">live</b>{" "}
+            to show it on the public site.
           </p>
         </div>
         <Button>
@@ -40,6 +41,7 @@ export default async function Page({
             { key: "specialties", label: "Specialties", align: "end" },
             { key: "clinicians", label: "Named clinicians", align: "end" },
             { key: "contract", label: "Contract" },
+            { key: "published", label: "Public site" },
             { key: "actions", label: "" },
           ]}
           rows={DEMO_HOSPITALS.map((h, i) => ({
@@ -64,6 +66,12 @@ export default async function Page({
               specialties: h.specialties.length,
               clinicians: h.clinicians.length,
               contract: i === 3 ? "LOI — in discussion" : "Contracted",
+              published: (
+                <Toggle
+                  label={<span className="sr-only">Show {h.name} on the public site</span>}
+                  defaultChecked={h.published}
+                />
+              ),
               actions: (
                 <Link
                   href={`/${locale}/admin/hospitals/${h.id}/edit`}

@@ -31,7 +31,7 @@ export default async function AppLayout({
       <Sidebar locale={locale} role={role} defaultCollapsed={collapsed} />
 
       <div className="flex min-w-0 flex-1 flex-col pb-16 md:pb-0">
-        <header className="flex items-center justify-between gap-3 px-4 py-3 md:px-8 md:py-4">
+        <header className="flex items-center justify-between gap-3 px-4 py-3 md:px-8 md:py-4 print:hidden">
           <Link
             href={`/${locale}`}
             className="text-lg font-semibold text-ink md:invisible"

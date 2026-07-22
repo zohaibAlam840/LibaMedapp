@@ -116,7 +116,7 @@ export default async function Page({
           <CorridorBadge code="CH" label="UK → Switzerland" />
         </div>
         <div className="mt-6 flex flex-wrap gap-3">
-          {DEMO_HOSPITALS.map((hosp) => (
+          {DEMO_HOSPITALS.filter((hosp) => hosp.published).map((hosp) => (
             <Link
               key={hosp.id}
               href={`${base}/hospitals/${hosp.id}`}

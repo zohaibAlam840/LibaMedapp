@@ -6,6 +6,7 @@ import {
   Globe2,
   MessageSquareText,
   ScrollText,
+  ShieldAlert,
   ShieldCheck,
   Stethoscope,
 } from "lucide-react";
@@ -14,8 +15,12 @@ import Avatar from "@/components/ui/Avatar";
 import Button from "@/components/ui/Button";
 import DetailPanelRow from "@/components/ui/DetailPanelRow";
 import StatusChip from "@/components/ui/StatusChip";
+import HandbackBadge from "@/components/ui/HandbackBadge";
+import NoFeeNotice from "@/components/ui/NoFeeNotice";
 import StatusTracker from "@/components/case/StatusTracker";
 import { DEMO_DOCUMENTS, getDemoCase } from "@/lib/demo";
+import { getCorridor } from "@/lib/corridors";
+import { getReferralCompliance, NON_SUBSTITUTION_LABELS } from "@/lib/referral";
 
 // 9C · Case detail (#37): header + status tracker + documents + meta.
 export default async function Page({
@@ -26,6 +31,8 @@ export default async function Page({
   const { locale, caseId } = await params;
   const c = getDemoCase(caseId);
   const base = `/${locale}/referring/cases/${c.id}`;
+  const record = getReferralCompliance(caseId);
+  const corridor = getCorridor(c.corridor);
 
   return (
     <div className="flex flex-col gap-5">
@@ -40,6 +47,7 @@ export default async function Page({
           </h1>
         </div>
         <div className="flex items-center gap-2">
+          {record && <HandbackBadge handback={record.handback} />}
           <StatusChip status={c.status} />
           <Button size="sm" href={`${base}/messages`}>
             <MessageSquareText aria-hidden className="size-4" />
@@ -111,8 +119,33 @@ export default async function Page({
             </div>
           </Card>
 
+          {record && (
+            <Card>
+              <CardTitle className="mb-2">Referral safeguards</CardTitle>
+              <div className="divide-y divide-line">
+                <DetailPanelRow
+                  icon={ShieldAlert}
+                  label="NHS non-substitution"
+                  value={NON_SUBSTITUTION_LABELS[record.nonSubstitution.reason]}
+                />
+                <DetailPanelRow
+                  icon={Globe2}
+                  label="Data-transfer basis"
+                  value={corridor.transferBasis === "scc" ? "SCC / IDTA" : "UK adequacy"}
+                />
+                <DetailPanelRow
+                  icon={ScrollText}
+                  label="Patient consent"
+                  value={`v${record.patientConsent.version} · captured`}
+                />
+              </div>
+              <NoFeeNotice compact className="mt-3" />
+            </Card>
+          )}
+
           <Card className="p-2">
             {[
+              ...(record ? [{ href: `${base}/record`, icon: ShieldAlert, label: "Referral record (PDF)" }] : []),
               { href: `${base}/treatment-plan`, icon: FileText, label: "Treatment plan" },
               { href: `${base}/consent`, icon: ScrollText, label: "Consent record" },
               { href: `${base}/summary`, icon: FileText, label: "Clinical summary" },

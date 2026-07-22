@@ -4,6 +4,7 @@
 // patient *reference* only — no patient names/avatars in lists.
 
 import type { CaseStatus } from "@/lib/caseStatus";
+import type { CorridorId } from "@/lib/corridors";
 
 export const DEMO_USER = {
   name: "Dr. Amara Chen",
@@ -20,7 +21,7 @@ export interface DemoCase {
   id: string;
   ref: string;
   patientRef: string;
-  corridor: "israel" | "france" | "turkey" | "switzerland";
+  corridor: CorridorId;
   corridorLabel: string;
   residency: string;
   hospital: string;
@@ -123,6 +124,17 @@ export interface DemoMessage {
   attachment?: { name: string; size: string };
   time: string;
   read?: boolean;
+  /**
+   * Whether this clinician-to-clinician message is visible in the patient's
+   * read-only portal. Defaults to visible (see `isPatientVisible`) — the flag
+   * exists so specific clinical notes can be kept clinician-only later without
+   * re-architecting the thread. */
+  patientVisible?: boolean;
+}
+
+/** Messages are patient-visible unless explicitly flagged otherwise. */
+export function isPatientVisible(m: DemoMessage): boolean {
+  return m.patientVisible !== false;
 }
 
 export const DEMO_MESSAGES: DemoMessage[] = [
@@ -142,6 +154,8 @@ export const DEMO_MESSAGES: DemoMessage[] = [
     attachment: { name: "Histopathology — March.pdf", size: "420 KB" },
     time: "Mon 14:03",
     read: true,
+    // Raw pathology detail — kept clinician-only, not surfaced to the patient.
+    patientVisible: false,
   },
   {
     direction: "incoming",
@@ -155,6 +169,9 @@ export interface DemoHospital {
   name: string;
   city: string;
   country: string;
+  /** Whether the hospital appears on the public site. Admin-controlled: a
+   *  partner is only advertised once it's contracted and accepting referrals. */
+  published: boolean;
   corridorLabel: string;
   intro: string;
   accreditation: { name: string; expires: string }[];
@@ -169,6 +186,7 @@ export const DEMO_HOSPITALS: DemoHospital[] = [
     name: "Sheba Medical Center",
     city: "Ramat Gan",
     country: "Israel",
+    published: true,
     corridorLabel: "UK → Israel",
     intro:
       "The largest medical centre in the Middle East, with internationally recognised programmes in oncology, orthopedics, and fertility.",
@@ -188,6 +206,7 @@ export const DEMO_HOSPITALS: DemoHospital[] = [
     name: "Hôpital Foch",
     city: "Suresnes (Paris)",
     country: "France",
+    published: false,
     corridorLabel: "UK → France",
     intro:
       "Leading French centre for thoracic surgery and lung transplantation, with major oncology, urology, and fertility programmes.",
@@ -207,6 +226,7 @@ export const DEMO_HOSPITALS: DemoHospital[] = [
     name: "Anadolu Medical Center",
     city: "Gebze (Istanbul)",
     country: "Turkey",
+    published: false,
     corridorLabel: "UK → Turkey",
     intro:
       "OECI-accredited comprehensive cancer centre affiliated with Johns Hopkins Medicine; strong orthopedics and reconstructive programmes.",
@@ -226,6 +246,7 @@ export const DEMO_HOSPITALS: DemoHospital[] = [
     name: "Hirslanden Zürich",
     city: "Zürich",
     country: "Switzerland",
+    published: false,
     corridorLabel: "UK → Switzerland",
     intro:
       "Switzerland's largest private hospital group; flagship orthopedics and trauma, with advanced oncology and cardiac surgery.",
