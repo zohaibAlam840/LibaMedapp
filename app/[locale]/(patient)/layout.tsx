@@ -20,7 +20,7 @@ export default async function PatientLayout({
         <div className="mx-auto flex h-16 max-w-3xl items-center justify-between gap-3 px-4">
           <Link href={`/${locale}`} className="flex items-center gap-2.5 font-semibold text-ink">
             <span className="flex size-9 items-center justify-center rounded-full bg-accent text-sm font-semibold text-white">
-              L
+              LM
             </span>
             LibaMed
           </Link>

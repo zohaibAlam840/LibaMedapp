@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Check, Lock, ShieldCheck, Stethoscope } from "lucide-react";
+import { Activity, ArrowRight, Check, Lock, Microscope, ShieldCheck, Sparkles, Stethoscope } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
@@ -7,7 +7,6 @@ import NumberedStepStrip from "@/components/ui/NumberedStepStrip";
 import { CorridorBadge, FactPill } from "@/components/ui/Badges";
 import { AccordionItem } from "@/components/ui/Accordion";
 import HeroPreview from "@/components/marketing/HeroPreview";
-import { DEMO_HOSPITALS } from "@/lib/demo";
 import { getDictionary } from "@/lib/dictionaries";
 
 // 9A · Home (spec V2 page 1) — fully localised via the dictionary.
@@ -115,17 +114,6 @@ export default async function Page({
           <CorridorBadge code="TR" label="UK → Turkey" />
           <CorridorBadge code="CH" label="UK → Switzerland" />
         </div>
-        <div className="mt-6 flex flex-wrap gap-3">
-          {DEMO_HOSPITALS.filter((hosp) => hosp.published).map((hosp) => (
-            <Link
-              key={hosp.id}
-              href={`${base}/hospitals/${hosp.id}`}
-              className="rounded-full border border-line bg-card px-4 py-2 text-sm text-ink-secondary transition-colors hover:border-line-strong hover:text-ink"
-            >
-              {hosp.name}
-            </Link>
-          ))}
-        </div>
       </section>
 
       {/* Pledge teaser */}
@@ -152,25 +140,26 @@ export default async function Page({
         </div>
       </section>
 
-      {/* Specialties preview */}
+      {/* Specialties — kept generic on purpose: the exhaustive list changes per
+          partner hospital, so we describe the breadth rather than enumerate it. */}
       <section className="mx-auto max-w-6xl px-4 py-20 md:px-8">
-        <div className="mb-6 flex items-center justify-between gap-4">
-          <h2 className="text-2xl font-semibold text-ink">{h.specialtiesTitle}</h2>
-          <Link
-            href={`${base}/specialties`}
-            className="text-sm font-medium text-accent hover:underline"
-          >
-            {h.viewAll}
-          </Link>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {["Oncology", "Orthopedics", "Fertility", "Cardiology", "Neurosurgery", "Transplantation", "Reconstructive surgery", "Thoracic surgery"].map(
-            (s) => (
-              <Chip key={s} variant="outline">
-                {s}
-              </Chip>
-            ),
-          )}
+        <h2 className="mb-3 text-2xl font-semibold text-ink">{h.specialtiesTitle}</h2>
+        <p className="max-w-[60ch] text-[15px] leading-relaxed text-ink-secondary">
+          Hospitals that partner with LibaMed provide a multitude of specialties
+          and medical technologies.
+        </p>
+        <div className="mt-6 flex flex-wrap gap-3">
+          {[
+            { icon: Activity, label: "Cancer care" },
+            { icon: Stethoscope, label: "Complex surgery" },
+            { icon: Microscope, label: "Diagnostics & imaging" },
+            { icon: Sparkles, label: "Advanced therapies" },
+          ].map(({ icon: Icon, label }) => (
+            <Chip key={label} variant="outline">
+              <Icon aria-hidden className="size-4 text-accent" />
+              {label}
+            </Chip>
+          ))}
         </div>
       </section>
 

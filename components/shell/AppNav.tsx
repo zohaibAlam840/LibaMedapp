@@ -83,8 +83,8 @@ export function Sidebar({
           aria-label="LibaMed home"
           className="flex items-center gap-2.5"
         >
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent text-lg font-semibold text-white">
-            L
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent text-base font-semibold text-white">
+            LM
           </span>
           {!collapsed && <span className="text-lg font-semibold text-ink">LibaMed</span>}
         </Link>

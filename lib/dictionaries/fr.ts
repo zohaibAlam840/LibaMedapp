@@ -31,8 +31,7 @@ export const fr: Dictionary = {
     ctaRegister: "S’inscrire comme clinicien",
     ctaHow: "Comment ça marche",
     stats: [
-      { n: "4", l: "couloirs actifs" },
-      { n: "5 j", l: "retour des soins" },
+      { n: "4", l: "couloirs possibles" },
       { n: "100 %", l: "piloté par les cliniciens" },
     ],
     values: [
@@ -87,9 +86,8 @@ export const fr: Dictionary = {
     faqTitle: "Questions fréquentes",
     faqAll: "Toutes les questions et le glossaire",
     faqs: [
-      { q: "Qu’est-ce que LibaMed ?", a: "Une plateforme de clinicien à clinicien pour les orientations médicales internationales. Un médecin britannique oriente un patient — avec son consentement — vers un spécialiste nommé dans un hôpital accrédité à l’étranger, et reçoit un compte rendu structuré en retour pour la continuité des soins." },
+      { q: "Qu’est-ce que LibaMed ?", a: "Une plateforme de clinicien à clinicien pour les orientations médicales internationales. Un médecin britannique oriente un patient — avec son consentement — vers un spécialiste nommé dans un hôpital accrédité à l’étranger, et reçoit un compte rendu structuré en retour pour la continuité des soins. LibaMed Ltd est immatriculée à Cardiff, au Pays de Galles." },
       { q: "Est-ce un site de réservation de tourisme médical ?", a: "Non. Il n’y a pas de réservation côté patient. Les patients ne peuvent pas créer, modifier ou soumettre de dossiers — chaque orientation est créée et détenue par un clinicien vérifié." },
-      { q: "Qui est derrière LibaMed ?", a: "LibaMed Ltd, immatriculée à Cardiff, au Pays de Galles. Les hôpitaux partenaires incluent le Sheba Medical Center, l’Hôpital Foch, l’Anadolu Medical Center et Hirslanden." },
       { q: "Combien de temps faut-il pour créer une orientation ?", a: "Quelques minutes. L’admission guidée pose une question à la fois et enregistre au fur et à mesure — la plupart des cliniciens la complètent entre deux patients." },
     ],
     ctaTitle: "Offrez à votre patient des options au-delà de la liste d’attente",

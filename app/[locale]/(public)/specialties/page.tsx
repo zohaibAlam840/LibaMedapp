@@ -1,87 +1,42 @@
-import { Activity, Baby, Bone, Brain, HeartPulse, Scissors, Slice, Stethoscope } from "lucide-react";
-import { Card, SectionLabel } from "@/components/ui/Card";
-import Chip from "@/components/ui/Chip";
-import SearchInput from "@/components/ui/SearchInput";
-import { DEMO_HOSPITALS } from "@/lib/demo";
+import { ArrowRight, Sparkles } from "lucide-react";
+import Button from "@/components/ui/Button";
 
-// 9A · Specialties directory (spec V2 page 4): hero → filter bar → card grid.
-// Filtering is design-only for now (no client JS yet).
-const SPECIALTIES = [
-  { icon: Activity, name: "Oncology", subs: ["CAR-T", "CyberKnife", "BMT", "Precision oncology"], at: ["sheba", "anadolu", "foch", "hirslanden"] },
-  { icon: Bone, name: "Orthopedics", subs: ["Joint replacement", "Spine", "Sports", "Trauma"], at: ["sheba", "anadolu", "hirslanden"] },
-  { icon: Baby, name: "Fertility", subs: ["IVF", "ICSI", "Egg freezing", "PGT"], at: ["sheba", "foch", "hirslanden"] },
-  { icon: HeartPulse, name: "Cardiology", subs: ["Interventional", "Structural", "Electrophysiology"], at: ["sheba", "hirslanden"] },
-  { icon: Brain, name: "Neurosurgery", subs: ["Tumour", "Spine", "Functional"], at: ["sheba", "anadolu", "foch", "hirslanden"] },
-  { icon: Stethoscope, name: "Thoracic surgery", subs: ["Lung transplant", "Robotic resection"], at: ["foch"] },
-  { icon: Slice, name: "Transplantation", subs: ["Liver", "Kidney", "BMT"], at: ["sheba", "foch"] },
-  { icon: Scissors, name: "Reconstructive surgery", subs: ["Maxillofacial", "Burns", "Functional"], at: ["anadolu", "hirslanden"] },
-];
-
+// 9A · Specialties directory — placeholder / "coming soon". The full directory
+// is intentionally deferred: the specialty list changes per partner hospital,
+// so we describe the breadth here and build the searchable directory later.
 export default async function Page({
   params,
 }: {
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
-  const hospitalName = (id: string) =>
-    DEMO_HOSPITALS.find((h) => h.id === id)?.name.split(" ")[0] ?? id;
+  const base = `/${locale}`;
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-12 md:px-8">
-      <div className="mb-8 max-w-2xl">
-        <h1 className="text-3xl font-semibold text-ink">Specialties</h1>
-        <p className="mt-2 text-[15px] text-ink-secondary">
-          A controlled directory — every specialty maps to named specialists at
-          accredited partner hospitals.
-        </p>
-      </div>
-
-      {/* Filter bar (design-only) */}
-      <div className="mb-8 flex flex-col gap-4">
-        <SearchInput placeholder="Search specialties" className="max-w-md" />
-        <div>
-          <SectionLabel className="mb-2">Corridor</SectionLabel>
-          <div className="flex flex-wrap gap-2">
-            <Chip name="sp-corridor" value="all" defaultSelected>All corridors</Chip>
-            <Chip name="sp-corridor" value="il">Israel</Chip>
-            <Chip name="sp-corridor" value="fr">France</Chip>
-            <Chip name="sp-corridor" value="tr">Turkey</Chip>
-            <Chip name="sp-corridor" value="ch">Switzerland</Chip>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {SPECIALTIES.map(({ icon: Icon, name, subs, at }) => (
-          <Card key={name} className="flex flex-col gap-3 p-5">
-            <span className="flex size-11 items-center justify-center rounded-full bg-accent-soft text-accent">
-              <Icon aria-hidden className="size-5" />
-            </span>
-            <h2 className="text-lg font-semibold text-ink">{name}</h2>
-            <div className="flex flex-wrap gap-1.5">
-              {subs.map((s) => (
-                <Chip key={s} size="sm">
-                  {s}
-                </Chip>
-              ))}
-            </div>
-            <p className="mt-auto pt-1 text-[13px] text-ink-secondary">
-              Available at:{" "}
-              <span className="font-medium text-ink">
-                {at.map(hospitalName).join(" · ")}
-              </span>
-            </p>
-          </Card>
-        ))}
-      </div>
-
-      <p className="mt-8 text-[13px] text-ink-muted">
-        Not listed? Specialties expand with each partner hospital —{" "}
-        <a href={`/${locale}/contact`} className="font-medium text-accent hover:underline">
-          ask us about a specific case
-        </a>
-        .
+    <div className="mx-auto flex max-w-2xl flex-col items-center px-4 py-24 text-center md:px-8">
+      <span className="mb-6 flex size-14 items-center justify-center rounded-2xl bg-accent-soft text-accent">
+        <Sparkles aria-hidden className="size-6" />
+      </span>
+      <span className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-subtle px-3 py-1 text-[12px] font-semibold uppercase tracking-wide text-ink-secondary">
+        Coming soon
+      </span>
+      <h1 className="text-3xl font-semibold text-ink md:text-4xl">
+        Specialties directory
+      </h1>
+      <p className="mt-4 max-w-[52ch] text-lg leading-relaxed text-ink-secondary">
+        Hospitals that partner with LibaMed provide a multitude of specialties and
+        medical technologies. We&rsquo;re building a searchable directory that maps
+        each one to named specialists at accredited partner hospitals.
       </p>
+      <div className="mt-8 flex flex-wrap justify-center gap-3">
+        <Button href={`${base}/for-clinicians`}>
+          For clinicians
+          <ArrowRight aria-hidden className="size-4 rtl:-scale-x-100" />
+        </Button>
+        <Button variant="secondary" href={`${base}/contact`}>
+          Ask about a specific case
+        </Button>
+      </div>
     </div>
   );
 }

@@ -73,9 +73,8 @@ export interface Faq {
 }
 
 export const FAQS: Faq[] = [
-  { category: "About", q: "What is LibaMed?", a: "A clinician-to-clinician platform for international medical referrals. A UK doctor refers a patient — with consent — to a named specialist at an accredited hospital abroad, and receives a structured summary back for continuity of care." },
+  { category: "About", q: "What is LibaMed?", a: "A clinician-to-clinician platform for international medical referrals. A UK doctor refers a patient — with consent — to a named specialist at an accredited hospital abroad, and receives a structured summary back for continuity of care. LibaMed Ltd is registered in Cardiff, Wales." },
   { category: "About", q: "Is this a medical-tourism booking site?", a: "No. There is no patient-facing booking. Patients cannot create, edit, or submit cases — every referral is created and owned by a verified clinician." },
-  { category: "About", q: "Who is behind LibaMed?", a: "LibaMed Ltd, registered in Cardiff, Wales. Partner hospitals include Sheba Medical Center, Hôpital Foch, Anadolu Medical Center, and Hirslanden." },
   { category: "Referrals", q: "How long does a referral take to create?", a: "Minutes. The guided intake asks one question at a time and saves as you go — most clinicians complete it between patients." },
   { category: "Referrals", q: "Who sees the referral at the receiving hospital?", a: "Only the named receiving specialist you selected, and their direct clinical team. Cases never land in a shared inbox." },
   { category: "Referrals", q: "What happens after treatment?", a: "The receiving specialist returns a structured clinical summary — treatment given, outcome, medications, follow-up plan — within 5 working days of completion." },

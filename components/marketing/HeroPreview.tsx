@@ -12,8 +12,8 @@ export default function HeroPreview() {
       <div className="overflow-hidden rounded-panel border border-line bg-card shadow-elevated">
         <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
           <div className="flex items-center gap-2.5">
-            <span className="flex size-7 items-center justify-center rounded-full bg-accent text-[13px] font-semibold text-white">
-              L
+            <span className="flex size-7 items-center justify-center rounded-full bg-accent text-[11px] font-semibold text-white">
+              LM
             </span>
             <div className="leading-tight">
               <p className="text-[13px] font-semibold text-ink">Case LM-2026-0142</p>

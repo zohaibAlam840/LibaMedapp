@@ -31,8 +31,7 @@ export const tr: Dictionary = {
     ctaRegister: "Klinisyen olarak kayıt ol",
     ctaHow: "Nasıl çalışır",
     stats: [
-      { n: "4", l: "aktif koridor" },
-      { n: "5 gün", l: "bakıma geri dönüş" },
+      { n: "4", l: "olası koridor" },
       { n: "%100", l: "klinisyen liderliğinde" },
     ],
     values: [
@@ -87,9 +86,8 @@ export const tr: Dictionary = {
     faqTitle: "Sık sorulan sorular",
     faqAll: "Tüm sorular ve sözlük",
     faqs: [
-      { q: "LibaMed nedir?", a: "Uluslararası tıbbi sevkler için klinisyenden klinisyene bir platform. Bir İngiltere hekimi, hastanın onamıyla, yurt dışındaki akredite bir hastanede adı belirtilen bir uzmana hastayı sevk eder ve bakımın sürekliliği için yapılandırılmış bir özet geri alır." },
+      { q: "LibaMed nedir?", a: "Uluslararası tıbbi sevkler için klinisyenden klinisyene bir platform. Bir İngiltere hekimi, hastanın onamıyla, yurt dışındaki akredite bir hastanede adı belirtilen bir uzmana hastayı sevk eder ve bakımın sürekliliği için yapılandırılmış bir özet geri alır. LibaMed Ltd, Galler, Cardiff’te kayıtlıdır." },
       { q: "Bu bir sağlık turizmi rezervasyon sitesi mi?", a: "Hayır. Hasta tarafında rezervasyon yoktur. Hastalar dosya oluşturamaz, düzenleyemez veya gönderemez — her sevk doğrulanmış bir klinisyen tarafından oluşturulur ve ona aittir." },
-      { q: "LibaMed’in arkasında kim var?", a: "Galler, Cardiff’te kayıtlı LibaMed Ltd. Ortak hastaneler arasında Sheba Medical Center, Hôpital Foch, Anadolu Sağlık Merkezi ve Hirslanden bulunur." },
       { q: "Bir sevk oluşturmak ne kadar sürer?", a: "Dakikalar. Rehberli kabul her seferinde tek soru sorar ve ilerledikçe kaydeder — çoğu klinisyen bunu iki hasta arasında tamamlar." },
     ],
     ctaTitle: "Hastanıza bekleme listesinin ötesinde seçenekler sunun",

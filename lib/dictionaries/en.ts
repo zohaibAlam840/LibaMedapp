@@ -31,8 +31,7 @@ export const en: Dictionary = {
     ctaRegister: "Register as a clinician",
     ctaHow: "How it works",
     stats: [
-      { n: "4", l: "live corridors" },
-      { n: "5-day", l: "care handback" },
+      { n: "4", l: "possible corridors" },
       { n: "100%", l: "clinician-led" },
     ],
     values: [
@@ -87,9 +86,8 @@ export const en: Dictionary = {
     faqTitle: "Common questions",
     faqAll: "All questions & glossary",
     faqs: [
-      { q: "What is LibaMed?", a: "A clinician-to-clinician platform for international medical referrals. A UK doctor refers a patient — with consent — to a named specialist at an accredited hospital abroad, and receives a structured summary back for continuity of care." },
+      { q: "What is LibaMed?", a: "A clinician-to-clinician platform for international medical referrals. A UK doctor refers a patient — with consent — to a named specialist at an accredited hospital abroad, and receives a structured summary back for continuity of care. LibaMed Ltd is registered in Cardiff, Wales." },
       { q: "Is this a medical-tourism booking site?", a: "No. There is no patient-facing booking. Patients cannot create, edit, or submit cases — every referral is created and owned by a verified clinician." },
-      { q: "Who is behind LibaMed?", a: "LibaMed Ltd, registered in Cardiff, Wales. Partner hospitals include Sheba Medical Center, Hôpital Foch, Anadolu Medical Center, and Hirslanden." },
       { q: "How long does a referral take to create?", a: "Minutes. The guided intake asks one question at a time and saves as you go — most clinicians complete it between patients." },
     ],
     ctaTitle: "Give your patient options beyond the waiting list",

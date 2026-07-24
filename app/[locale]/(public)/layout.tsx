@@ -43,7 +43,7 @@ export default async function PublicLayout({
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 md:px-8">
           <Link href={base} className="flex items-center gap-2.5 font-semibold text-ink">
             <span className="flex size-9 items-center justify-center rounded-full bg-accent text-sm font-semibold text-white">
-              L
+              LM
             </span>
             LibaMed
           </Link>

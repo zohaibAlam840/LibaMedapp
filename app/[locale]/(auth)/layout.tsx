@@ -25,7 +25,7 @@ export default async function AuthLayout({
         className="mb-6 flex items-center gap-2.5 text-xl font-semibold text-ink"
       >
         <span className="flex size-10 items-center justify-center rounded-full bg-accent text-base font-semibold text-white">
-          L
+          LM
         </span>
         LibaMed
       </Link>
