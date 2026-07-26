@@ -2,29 +2,55 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Briefcase, ShieldCheck, Stethoscope } from "lucide-react";
+import { Briefcase, Check, ShieldCheck, Stethoscope } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Checkbox from "@/components/ui/Checkbox";
 import { Field, Input, Select } from "@/components/ui/Field";
+import { SectionLabel } from "@/components/ui/Card";
 import { cn } from "@/lib/cn";
 
-// 9B · Register — two entry points behind a single screen:
-//  · "clinician"  — referring doctor; GMC-verified (path kept EXACTLY as before).
-//  · "introducer" — insurance case manager / broker; NO GMC. They originate a
-//    case; a UK clinician co-signs before anything proceeds, so the clinical
-//    safeguard stays intact — the introducer is a case originator, not a referrer.
+// 9B · Register — two entry points behind one screen:
+//  · "clinician"  — referring doctor; GMC-verified (kept EXACTLY as before).
+//  · "introducer" — insurance case manager / broker; NO GMC. Verification here
+//    routes to review, never a hard reject (they aren't making a clinical
+//    referral). Every case they originate is still co-signed by a UK clinician.
+//
+// Verification LOOKUP + account state machine (verified/pending/declined) are
+// backend concerns; this screen collects the fields and reflects the intent.
 
 type Mode = "clinician" | "introducer";
+type RegStatus = "" | "fca" | "employer";
 
 const TABS: { id: Mode; label: string; icon: typeof Stethoscope }[] = [
   { id: "clinician", label: "Referring clinician", icon: Stethoscope },
   { id: "introducer", label: "Insurance / broker", icon: Briefcase },
 ];
 
+const REG_OPTIONS: { id: Exclude<RegStatus, "">; title: string; desc: string }[] = [
+  {
+    id: "fca",
+    title: "FCA-regulated intermediary",
+    desc: "We check your authorisation number against the public FCA register.",
+  },
+  {
+    id: "employer",
+    title: "Not FCA-regulated (employer-verified)",
+    desc: "Your company name and job title go to manual review.",
+  },
+];
+
 export default function RegisterForm({ locale }: { locale: string }) {
   const [mode, setMode] = useState<Mode>("clinician");
+  const [regStatus, setRegStatus] = useState<RegStatus>("");
+  const [fca, setFca] = useState("");
   const [attested, setAttested] = useState(false);
   const introducer = mode === "introducer";
+
+  const fcaValid = /^\d{6}$/.test(fca);
+  const fcaError = regStatus === "fca" && fca !== "" && !fcaValid;
+  // Submit gate: attestation is mandatory, a regulatory status must be chosen,
+  // and if FCA-regulated the number must be a valid 6 digits.
+  const introReady = attested && regStatus !== "" && (regStatus === "employer" || fcaValid);
 
   return (
     <div className="flex flex-col gap-5">
@@ -45,9 +71,7 @@ export default function RegisterForm({ locale }: { locale: string }) {
               onClick={() => setMode(id)}
               className={cn(
                 "flex items-center justify-center gap-1.5 rounded-full px-3 py-2 text-[13px] font-medium transition-colors",
-                active
-                  ? "bg-card text-ink shadow-card"
-                  : "text-ink-secondary hover:text-ink",
+                active ? "bg-card text-ink shadow-card" : "text-ink-secondary hover:text-ink",
               )}
             >
               <Icon aria-hidden className="size-4" />
@@ -79,7 +103,7 @@ export default function RegisterForm({ locale }: { locale: string }) {
       <Field
         label="Work email"
         htmlFor="email"
-        hint={introducer ? "Use your company email." : "Use your practice or NHS email."}
+        hint={introducer ? "The email you use at work." : "Use your practice or NHS email."}
       >
         <Input
           id="email"
@@ -91,17 +115,68 @@ export default function RegisterForm({ locale }: { locale: string }) {
 
       {introducer ? (
         <>
-          <Field label="Company or employer name" htmlFor="org">
+          <Field label="Company / organisation name" htmlFor="org">
             <Input id="org" autoComplete="organization" placeholder="e.g. Meridian Health Partners" />
           </Field>
 
-          <Field
-            label="FCA authorisation number"
-            htmlFor="fca"
-            hint="If you’re an FCA-regulated intermediary. Leave blank if registering under an employer."
-          >
-            <Input id="fca" inputMode="numeric" placeholder="e.g. 123456" />
+          <Field label="Job title" htmlFor="job-title" hint="Helps our reviewers where there’s no register to check.">
+            <Input id="job-title" autoComplete="organization-title" placeholder="e.g. Senior case manager" />
           </Field>
+
+          {/* Regulatory status — drives which verification path fires */}
+          <div className="flex flex-col gap-1.5">
+            <SectionLabel>Regulatory status</SectionLabel>
+            <div className="grid gap-2">
+              {REG_OPTIONS.map((opt) => {
+                const active = regStatus === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    onClick={() => setRegStatus(opt.id)}
+                    className={cn(
+                      "flex items-start gap-3 rounded-inner border p-3 text-start transition-colors",
+                      active ? "border-accent-border bg-accent-soft" : "border-line bg-card hover:border-line-strong",
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border",
+                        active ? "border-accent bg-accent text-white" : "border-line-strong",
+                      )}
+                    >
+                      {active && <Check aria-hidden className="size-3.5" />}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-[15px] font-medium text-ink">{opt.title}</span>
+                      <span className="block text-[13px] text-ink-secondary">{opt.desc}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {regStatus === "fca" && (
+            <Field
+              label="FCA authorisation number"
+              htmlFor="fca"
+              hint={fcaError ? "Must be 6 digits." : "6 digits — checked against the public FCA register."}
+            >
+              <Input
+                id="fca"
+                inputMode="numeric"
+                maxLength={6}
+                value={fca}
+                onChange={(e) => setFca(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                placeholder="123456"
+                className={fcaError ? "border-danger-text" : undefined}
+                aria-invalid={fcaError || undefined}
+              />
+            </Field>
+          )}
 
           <div className="flex items-start gap-2.5 rounded-inner border border-accent-border bg-accent-soft/60 p-3.5 text-[13px] text-ink">
             <ShieldCheck aria-hidden className="mt-0.5 size-4 shrink-0 text-accent" />
@@ -114,8 +189,7 @@ export default function RegisterForm({ locale }: { locale: string }) {
 
           <div className="rounded-inner border border-line px-4">
             <Checkbox
-              label="I am not making a clinical referral"
-              description="I confirm I am only facilitating case coordination, not providing clinical judgement."
+              label="I confirm I am not making a clinical referral, only facilitating case coordination."
               checked={attested}
               onChange={(e) => setAttested(e.target.checked)}
             />
@@ -143,8 +217,8 @@ export default function RegisterForm({ locale }: { locale: string }) {
       </Field>
 
       {introducer ? (
-        attested ? (
-          <Button href={`/${locale}/login`} className="w-full">
+        introReady ? (
+          <Button href={`/${locale}/register/introducer-review?status=${regStatus}`} className="w-full">
             Create introducer account
           </Button>
         ) : (
