@@ -19,7 +19,7 @@ export const CASE_STATUS_LABELS: Record<CaseStatus, string> = {
   "under-review": "Under review",
   "plan-received": "Treatment plan received",
   confirmed: "Confirmed",
-  complete: "Treatment complete",
+  complete: "Treatment completed",
   "summary-returned": "Summary returned",
   "consent-withdrawn": "Consent withdrawn",
   "access-expired": "Access expired",

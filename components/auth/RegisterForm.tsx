@@ -23,7 +23,7 @@ type RegStatus = "" | "fca" | "employer";
 
 const TABS: { id: Mode; label: string; icon: typeof Stethoscope }[] = [
   { id: "clinician", label: "Referring clinician", icon: Stethoscope },
-  { id: "introducer", label: "Insurance / broker", icon: Briefcase },
+  { id: "introducer", label: "Others", icon: Briefcase },
 ];
 
 const REG_OPTIONS: { id: Exclude<RegStatus, "">; title: string; desc: string }[] = [
@@ -85,7 +85,7 @@ export default function RegisterForm({ locale }: { locale: string }) {
         <h1 className="text-2xl font-semibold text-ink">Register</h1>
         <p className="mt-1 text-sm text-ink-secondary">
           {introducer
-            ? "For insurance case managers and brokers. No GMC needed — you originate a case, and a UK clinician co-signs before anything proceeds."
+            ? "For non-clinician introducers — insurance case managers, brokers, and others. No GMC needed; you originate a case, and a UK clinician co-signs before anything proceeds."
             : "For UK & US referring clinicians. You’ll verify your GMC registration before creating a case."}
         </p>
       </div>

@@ -93,7 +93,7 @@ export default async function Page({
             <Checkbox label="Under review" defaultChecked />
             <Checkbox label="Plan received" defaultChecked />
             <Checkbox label="Confirmed" defaultChecked />
-            <Checkbox label="Complete" />
+            <Checkbox label="Completed" />
             <Checkbox label="Summary returned" />
           </div>
         </Card>

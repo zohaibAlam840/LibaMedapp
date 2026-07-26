@@ -74,7 +74,7 @@ export default async function Page({
             <Checkbox label="New / under review" defaultChecked />
             <Checkbox label="Plan sent" defaultChecked />
             <Checkbox label="Confirmed" defaultChecked />
-            <Checkbox label="Complete" />
+            <Checkbox label="Completed" />
           </div>
           <SectionLabel className="mb-1">Specialty</SectionLabel>
           <div className="flex flex-col">

@@ -26,7 +26,7 @@ export default function HeroPreview() {
         <div className="flex flex-col gap-3 p-5">
           {/* Mini status tracker */}
           <div className="flex items-center">
-            {["Submitted", "Under review", "Plan", "Complete"].map((label, i) => (
+            {["Submitted", "Under review", "Plan", "Completed"].map((label, i) => (
               <div key={label} className="flex flex-1 items-center last:flex-none">
                 <span
                   className={`flex size-6 items-center justify-center rounded-full text-[10px] font-semibold ${
