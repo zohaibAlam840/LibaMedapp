@@ -1,65 +1,99 @@
+import { Stethoscope } from "lucide-react";
 import { Card, CardTitle } from "@/components/ui/Card";
 import Avatar from "@/components/ui/Avatar";
-import ProgressBar from "@/components/ui/ProgressBar";
+import Chip from "@/components/ui/Chip";
 import ResponsiveTable from "@/components/ui/ResponsiveTable";
-import { getDemoHospital } from "@/lib/demo";
+import EmptyState from "@/components/ui/EmptyState";
+import AddDoctorForm from "@/components/admin/AddDoctorForm";
+import { getSessionUser } from "@/lib/auth";
+import { getDoctorsForHospital } from "@/lib/db/doctors";
+import { getCases } from "@/lib/db/referrals";
+import { getHospital } from "@/lib/db/hospitals";
 
-// Coordinator · Specialists (sidebar aggregation) — per-specialist workload at
-// the coordinator's hospital. Operational view: no clinical content.
-const WORKLOAD = [
-  { name: "Dr. Noa Peretz", specialty: "Oncology", queue: 3, avg: "1.8 days", load: 60 },
-  { name: "Dr. Avi Shalev", specialty: "Orthopedics — spine", queue: 2, avg: "2.4 days", load: 40 },
-  { name: "Dr. Tamar Ben-David", specialty: "Fertility", queue: 1, avg: "1.1 days", load: 20 },
-];
+// Coordinator · Specialists (sidebar aggregation) — the named receiving
+// clinicians at the coordinator's own hospital, with live queue counts.
+// Operational view: no clinical content. A coordinator can submit a new
+// clinician; an admin approves them before they appear publicly.
+const STATUS_TONE: Record<string, string> = {
+  approved: "bg-success-bg text-success-text",
+  pending: "bg-warning-bg text-warning-text",
+  rejected: "bg-danger-bg text-danger-text",
+};
 
-export default async function Page() {
-  const hospital = getDemoHospital("sheba");
+export default async function Page({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  const user = await getSessionUser();
+  const hospitalId = user?.hospitalId;
+
+  const [doctors, cases, hospital] = await Promise.all([
+    hospitalId ? getDoctorsForHospital(hospitalId) : Promise.resolve([]),
+    getCases(user),
+    hospitalId ? getHospital(hospitalId) : Promise.resolve(null),
+  ]);
+
+  // Live workload: open cases currently addressed to each named clinician.
+  const openCases = cases.filter(
+    (c) => c.status !== "summary-returned" && c.status !== "consent-withdrawn",
+  );
+  const queueFor = (name: string) => openCases.filter((c) => c.specialist === name).length;
 
   return (
     <div className="flex flex-col gap-5">
-      <div>
-        <h1 className="text-[28px] font-semibold text-ink">Specialists</h1>
-        <p className="mt-1 text-[15px] text-ink-secondary">
-          {hospital.name} · workload across your named receiving clinicians.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-[28px] font-semibold text-ink">Specialists</h1>
+          <p className="mt-1 text-[15px] text-ink-secondary">
+            {hospital?.name ?? "Your hospital"} · workload across your named
+            receiving clinicians.
+          </p>
+        </div>
+        {hospitalId && (
+          <AddDoctorForm locale={locale} hospitals={[]} canChooseHospital={false} />
+        )}
       </div>
 
       <Card>
         <CardTitle>Workload</CardTitle>
-        <ResponsiveTable
-          columns={[
-            { key: "name", label: "Specialist" },
-            { key: "specialty", label: "Specialty" },
-            { key: "queue", label: "In queue", align: "end" },
-            { key: "avg", label: "Avg response" },
-            { key: "load", label: "Load" },
-          ]}
-          rows={WORKLOAD.map((w) => ({
-            id: w.name,
-            cells: {
-              name: (
-                <span className="flex items-center gap-2.5 font-medium">
-                  <Avatar name={w.name} size="sm" />
-                  {w.name}
-                </span>
-              ),
-              specialty: w.specialty,
-              queue: w.queue,
-              avg: w.avg,
-              load: (
-                <ProgressBar
-                  value={w.load}
-                  label={`${w.name} load`}
-                  className="w-28"
-                />
-              ),
-            },
-          }))}
-        />
-        <p className="mt-3 text-xs text-ink-muted">
-          Coordinators see status, timing, and logistics only — not clinical
-          detail or diagnostic documents.
-        </p>
+        {!hospitalId ? (
+          <EmptyState
+            icon={Stethoscope}
+            title="No hospital linked"
+            description="Your account isn't linked to a hospital yet — ask an administrator to assign you."
+          />
+        ) : doctors.length === 0 ? (
+          <EmptyState
+            icon={Stethoscope}
+            title="No clinicians yet"
+            description="Add your first named receiving clinician above. An admin approves them before they appear publicly."
+          />
+        ) : (
+          <ResponsiveTable
+            columns={[
+              { key: "name", label: "Clinician" },
+              { key: "specialty", label: "Specialty" },
+              { key: "queue", label: "Open cases" },
+              { key: "status", label: "Status" },
+            ]}
+            rows={doctors.map((d) => ({
+              id: d.id,
+              cells: {
+                name: (
+                  <span className="flex items-center gap-2.5 font-medium">
+                    <Avatar name={d.name} size="sm" />
+                    {d.name}
+                  </span>
+                ),
+                specialty: d.role || "—",
+                queue: queueFor(d.name),
+                status: (
+                  <Chip size="sm" className={STATUS_TONE[d.status]}>
+                    {d.status[0].toUpperCase() + d.status.slice(1)}
+                  </Chip>
+                ),
+              },
+            }))}
+          />
+        )}
       </Card>
     </div>
   );

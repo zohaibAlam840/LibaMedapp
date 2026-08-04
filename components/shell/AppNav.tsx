@@ -15,7 +15,7 @@ import {
 import Avatar from "@/components/ui/Avatar";
 import type { Role } from "@/lib/rbac";
 import { ROLE_LABEL } from "@/lib/rbac";
-import { DEMO_USERS, DEMO_ROLE_SIDEBAR_COOKIE } from "@/lib/demoRole";
+import { DEMO_ROLE_SIDEBAR_COOKIE } from "@/lib/demoRole";
 import { navForRole, mobileTabs, type NavItem } from "@/lib/nav";
 import { cn } from "@/lib/cn";
 
@@ -47,15 +47,18 @@ function CountBadge({ count, floating }: { count: number; floating?: boolean }) 
 export function Sidebar({
   locale,
   role,
+  userName,
   defaultCollapsed,
 }: {
   locale: string;
   role: Role;
+  /** Real signed-in user's name (falls back to the demo user for previews). */
+  userName?: string;
   defaultCollapsed: boolean;
 }) {
   const items = navForRole(role);
   const isActive = useActive(locale);
-  const user = DEMO_USERS[role];
+  const displayName = userName ?? ROLE_LABEL[role];
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
 
   function toggle() {
@@ -135,13 +138,13 @@ export function Sidebar({
       {/* Role indicator */}
       {!collapsed && (
         <div className="mx-2.5 mb-1 flex items-center gap-2.5 rounded-inner bg-subtle px-2.5 py-2">
-          <Avatar name={user.name} size="sm" />
+          <Avatar name={displayName} size="sm" />
           <span className="min-w-0 flex-1">
             <span className="block truncate text-[13px] font-medium text-ink">
               {ROLE_LABEL[role]}
             </span>
             <span className="block truncate text-[11px] text-ink-secondary">
-              {user.name}
+              {displayName}
             </span>
           </span>
         </div>

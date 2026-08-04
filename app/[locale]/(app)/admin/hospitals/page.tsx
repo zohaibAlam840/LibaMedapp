@@ -5,7 +5,7 @@ import Button from "@/components/ui/Button";
 import ResponsiveTable from "@/components/ui/ResponsiveTable";
 import Toggle from "@/components/ui/Toggle";
 import { AccreditationBadge } from "@/components/ui/Badges";
-import { DEMO_HOSPITALS } from "@/lib/demo";
+import { getHospitals } from "@/lib/db/hospitals";
 
 // 9E · Partner hospital list (#52) — admin-editable without a developer (§8.3).
 export default async function Page({
@@ -14,6 +14,7 @@ export default async function Page({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+  const hospitals = await getHospitals();
 
   return (
     <div className="flex flex-col gap-5">
@@ -44,7 +45,7 @@ export default async function Page({
             { key: "published", label: "Public site" },
             { key: "actions", label: "" },
           ]}
-          rows={DEMO_HOSPITALS.map((h, i) => ({
+          rows={hospitals.map((h, i) => ({
             id: h.id,
             cells: {
               name: (

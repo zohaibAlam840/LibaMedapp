@@ -3,7 +3,8 @@ import { Card, CardTitle, SectionLabel } from "@/components/ui/Card";
 import Avatar from "@/components/ui/Avatar";
 import Button from "@/components/ui/Button";
 import StatusChip from "@/components/ui/StatusChip";
-import { getDemoCase } from "@/lib/demo";
+import { notFound } from "next/navigation";
+import { getCase } from "@/lib/db/referrals";
 
 // 9C · Treatment plan received view (#39) — acceptance §14.5.
 // Itemised costs before treatment is a Pledge commitment (no hidden fees).
@@ -13,7 +14,8 @@ export default async function Page({
   params: Promise<{ locale: string; caseId: string }>;
 }) {
   const { locale, caseId } = await params;
-  const c = getDemoCase(caseId);
+  const c = await getCase(caseId);
+  if (!c) notFound();
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-5">

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -14,9 +15,9 @@ import NoFeeNotice from "@/components/ui/NoFeeNotice";
 import HandbackBadge from "@/components/ui/HandbackBadge";
 import AuditTrailList from "@/components/case/AuditTrailList";
 import EmptyState from "@/components/ui/EmptyState";
-import { getDemoCase } from "@/lib/demo";
-import { getCorridor } from "@/lib/corridors";
-import { getReferralCompliance, NON_SUBSTITUTION_LABELS } from "@/lib/referral";
+import { getCorridorRecord } from "@/lib/db/corridors";
+import { NON_SUBSTITUTION_LABELS } from "@/lib/referral";
+import { getCase, getReferralCompliance } from "@/lib/db/referrals";
 
 // 9C · Referral record (NHS-safeguard item 2) — the GP's own immutable,
 // exportable copy of the referral: declaration, consent, acceptance, scope, and
@@ -28,9 +29,10 @@ export default async function Page({
   params: Promise<{ locale: string; caseId: string }>;
 }) {
   const { locale, caseId } = await params;
-  const c = getDemoCase(caseId);
-  const record = getReferralCompliance(caseId);
-  const corridor = getCorridor(c.corridor);
+  const c = await getCase(caseId);
+  if (!c) notFound();
+  const record = await getReferralCompliance(caseId);
+  const corridor = await getCorridorRecord(c.corridor);
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-5">
@@ -76,11 +78,11 @@ export default async function Page({
             <CardTitle className="mb-2">Summary</CardTitle>
             <div className="divide-y divide-line">
               <DetailPanelRow icon={Stethoscope} label="Treatment scope" value={record.treatmentScope} />
-              <DetailPanelRow icon={Globe2} label="Corridor & residency" value={`${corridor.label} · ${corridor.residency}`} />
+              <DetailPanelRow icon={Globe2} label="Corridor & residency" value={`${corridor?.label ?? c.corridorLabel} · ${corridor?.residency ?? c.residency}`} />
               <DetailPanelRow
                 icon={ShieldAlert}
                 label="Data-transfer basis"
-                value={corridor.transferBasis === "scc" ? `Standard Contractual Clauses · ${corridor.country}` : `UK adequacy · ${corridor.country}`}
+                value={corridor?.transferBasis === "scc" ? `Standard Contractual Clauses · ${corridor.country}` : `UK adequacy · ${corridor?.country ?? ""}`}
               />
               <DetailPanelRow
                 icon={CheckCircle2}

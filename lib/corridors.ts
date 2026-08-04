@@ -6,7 +6,13 @@
 //   · item 5 — corridor-level data-transfer tagging (`transferBasis`)
 //   · item 7 — platform-enforced eligibility gating (`specialties[].nhs`)
 
-export type CorridorId = "israel" | "france" | "turkey" | "switzerland";
+/**
+ * Corridor identifier. A plain string, NOT a closed union: corridors are
+ * created by admins at runtime (see lib/db/corridors.ts), so the compiler
+ * cannot know the full set. The four below are the launch corridors and remain
+ * the offline fallback when the database is unreachable.
+ */
+export type CorridorId = string;
 
 /**
  * Legal basis for sharing UK patient data with the corridor's clinicians.
@@ -35,6 +41,18 @@ export const NHS_AVAILABILITY_LABELS: Record<NhsAvailability, string> = {
 export interface CorridorSpecialty {
   name: string;
   nhs: NhsAvailability;
+}
+
+/**
+ * The subset of a corridor needed to explain a data transfer. Both the code
+ * registry (CorridorConfig) and the DB record (CorridorRecord) satisfy this, so
+ * UI that only explains the legal basis can accept either.
+ */
+export interface CorridorTransferInfo {
+  country: string;
+  transferBasis: TransferBasis;
+  safeguard: string;
+  notification?: { authority: string; withinBusinessDays: number };
 }
 
 export interface CorridorConfig {
@@ -131,8 +149,28 @@ export const CORRIDORS: Record<CorridorId, CorridorConfig> = {
 
 export const CORRIDOR_LIST: CorridorConfig[] = Object.values(CORRIDORS);
 
+/**
+ * Look up a launch corridor from the code registry. Admin-created corridors are
+ * NOT here — callers that must handle those read lib/db/corridors.ts instead.
+ * Returns a neutral placeholder rather than undefined so a page never crashes
+ * on an id it doesn't recognise.
+ */
 export function getCorridor(id: CorridorId): CorridorConfig {
-  return CORRIDORS[id];
+  return CORRIDORS[id] ?? UNKNOWN_CORRIDOR(id);
+}
+
+function UNKNOWN_CORRIDOR(id: CorridorId): CorridorConfig {
+  return {
+    id,
+    label: id,
+    country: "",
+    hospitalId: "",
+    residency: "",
+    transferBasis: "scc", // fail safe: assume the stricter basis
+    safeguard:
+      "Transfer safeguard is configured for this corridor in the admin console.",
+    specialties: [],
+  };
 }
 
 /** A specialty is referable abroad only when NHS care is not the routine option. */

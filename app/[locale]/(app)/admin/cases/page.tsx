@@ -5,7 +5,7 @@ import SearchInput from "@/components/ui/SearchInput";
 import ResponsiveTable from "@/components/ui/ResponsiveTable";
 import StatusChip from "@/components/ui/StatusChip";
 import { CorridorBadge } from "@/components/ui/Badges";
-import { DEMO_CASES } from "@/lib/demo";
+import { getCases } from "@/lib/db/referrals";
 
 // Admin/manager · All cases (sidebar aggregation) — case flow across every
 // corridor. Governance sees status/routing/residency; message content is not
@@ -18,6 +18,7 @@ export default async function Page({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+  const cases = await getCases();
 
   return (
     <div className="flex flex-col gap-5">
@@ -31,7 +32,7 @@ export default async function Page({
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_240px]">
         <Card>
-          <CardTitle>{DEMO_CASES.length} cases</CardTitle>
+          <CardTitle>{cases.length} cases</CardTitle>
           <SearchInput placeholder="Search by case reference" className="mb-3" />
           <ResponsiveTable
             columns={[
@@ -41,7 +42,7 @@ export default async function Page({
               { key: "residency", label: "Residency" },
               { key: "status", label: "Status" },
             ]}
-            rows={DEMO_CASES.map((c) => ({
+            rows={cases.map((c) => ({
               id: c.id,
               cells: {
                 ref: (

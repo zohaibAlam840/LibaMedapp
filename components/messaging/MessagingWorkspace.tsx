@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import {
   FileText,
   FolderLock,
@@ -15,14 +16,7 @@ import StatusChip from "@/components/ui/StatusChip";
 import MessageBubble from "@/components/ui/MessageBubble";
 import Composer from "@/components/ui/Composer";
 import DetailPanelRow from "@/components/ui/DetailPanelRow";
-import {
-  DEMO_CASES,
-  DEMO_DOCUMENTS,
-  DEMO_MESSAGES,
-  DEMO_SPECIALIST,
-  DEMO_USER,
-  getDemoCase,
-} from "@/lib/demo";
+import { getCase, getCases, getDocuments, getMessages } from "@/lib/db/referrals";
 
 /**
  * Secure messaging 3-panel workspace (design spec §3.3): case list | thread |
@@ -32,7 +26,7 @@ import {
  * patient names/avatars); right panel = case metadata + audit link, NOT a
  * patient contact card. No voice notes, no calls.
  */
-export default function MessagingWorkspace({
+export default async function MessagingWorkspace({
   locale,
   side,
   caseId,
@@ -41,8 +35,16 @@ export default function MessagingWorkspace({
   side: "referring" | "receiving";
   caseId: string;
 }) {
-  const activeCase = getDemoCase(caseId);
-  const counterpart = side === "referring" ? DEMO_SPECIALIST : DEMO_USER;
+  const activeCase = await getCase(caseId);
+  if (!activeCase) notFound();
+  const cases = await getCases();
+  const messages = await getMessages(caseId);
+  const documents = await getDocuments(caseId);
+  // Who you're talking to depends on which side of the referral you're on.
+  const counterpart =
+    side === "referring"
+      ? { name: activeCase.specialist || "Receiving specialist", role: activeCase.hospital }
+      : { name: activeCase.referrer || "Referring clinician", role: "Referring clinician" };
   const basePath = `/${locale}/${side}/cases`;
 
   return (
@@ -52,7 +54,7 @@ export default function MessagingWorkspace({
         <CardTitle className="mb-0">Messages</CardTitle>
         <SearchInput placeholder="Search cases" />
         <div className="-mx-2 flex flex-col">
-          {DEMO_CASES.slice(0, 4).map((c) => (
+          {cases.slice(0, 4).map((c) => (
             <ListRow
               key={c.id}
               href={`${basePath}/${c.id}/messages`}
@@ -96,10 +98,18 @@ export default function MessagingWorkspace({
           <p className="self-center rounded-full bg-subtle px-3 py-1 text-[11px] text-ink-muted">
             Messages are encrypted and logged to the case audit trail
           </p>
-          {DEMO_MESSAGES.map((m, i) => (
+          {messages.map((m, i) => (
             <MessageBubble
               key={i}
-              direction={m.direction}
+              // Stored direction is from the referring perspective; flip it for
+              // the receiving side so each clinician sees their own sends right-aligned.
+              direction={
+                side === "referring"
+                  ? m.direction
+                  : m.direction === "outgoing"
+                    ? "incoming"
+                    : "outgoing"
+              }
               attachment={m.attachment}
               time={m.time}
               read={m.read}
@@ -109,7 +119,7 @@ export default function MessagingWorkspace({
           ))}
         </div>
 
-        <Composer />
+        <Composer ref={activeCase.ref} locale={locale} side={side} />
       </Card>
 
       {/* Case meta panel */}
@@ -140,7 +150,7 @@ export default function MessagingWorkspace({
           Documents
         </p>
         <div className="flex flex-col gap-2">
-          {DEMO_DOCUMENTS.map((doc) => (
+          {documents.map((doc) => (
             <div
               key={doc.name}
               className="flex items-center gap-2.5 rounded-inner bg-subtle px-3 py-2"

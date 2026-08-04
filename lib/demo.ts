@@ -18,6 +18,10 @@ export const DEMO_SPECIALIST = {
 };
 
 export interface DemoCase {
+  /** Referring clinician's name, when joined from the DB. */
+  referrer?: string;
+  /** Raw ISO updated_at, for pages that compute elapsed time. */
+  updatedIso?: string;
   id: string;
   ref: string;
   patientRef: string;
@@ -110,6 +114,8 @@ export interface DemoDocument {
   type: string;
   size: string;
   uploaded: string;
+  /** Storage key when the file lives in region object storage (else undefined). */
+  storagePath?: string;
 }
 
 export const DEMO_DOCUMENTS: DemoDocument[] = [

@@ -1,19 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Check, Globe2, Lock } from "lucide-react";
 import WizardShell from "@/components/wizard/WizardShell";
 import Chip from "@/components/ui/Chip";
 import TransferBasisNotice from "@/components/ui/TransferBasisNotice";
 import { SectionLabel } from "@/components/ui/Card";
-import {
-  CORRIDOR_LIST,
-  getCorridor,
-  isReferable,
-  NHS_AVAILABILITY_LABELS,
-  type CorridorId,
-} from "@/lib/corridors";
-import { getDemoHospital } from "@/lib/demo";
+import { isReferable, NHS_AVAILABILITY_LABELS, type CorridorId } from "@/lib/corridors";
+import type { CorridorRecord } from "@/lib/db/corridors";
+import { useIntake } from "@/lib/intakeStore";
 import { cn } from "@/lib/cn";
 
 /**
@@ -22,17 +17,27 @@ import { cn } from "@/lib/cn";
  * Specialties routinely available on the NHS are disabled here, so the platform
  * — not the GP's judgement each time — holds the line.
  */
-export default function CorridorStep({ locale }: { locale: string }) {
-  const [corridorId, setCorridorId] = useState<CorridorId>("israel");
-  const corridor = getCorridor(corridorId);
-  const firstReferable = corridor.specialties.find(isReferable)?.name ?? "";
-  const [specialty, setSpecialty] = useState(firstReferable);
+export default function CorridorStep({
+  locale,
+  hospitalNames,
+  corridors,
+}: {
+  locale: string;
+  /** hospitalId → current name, passed from the server so admin edits show here. */
+  hospitalNames: Record<string, string>;
+  /** Referable corridors, loaded from the DB so admin-created ones appear. */
+  corridors: CorridorRecord[];
+}) {
+  const { data, set } = useIntake();
+  const corridor = corridors.find((c) => c.id === data.corridorId) ?? corridors[0];
+  const corridorId = corridor?.id ?? "";
+  const specialty = data.specialty || corridor?.specialties.find(isReferable)?.name || "";
 
   function pickCorridor(id: CorridorId) {
-    setCorridorId(id);
-    const next = getCorridor(id).specialties.find(isReferable)?.name ?? "";
-    setSpecialty(next);
+    const next = corridors.find((c) => c.id === id)?.specialties.find(isReferable)?.name ?? "";
+    set({ corridorId: id, specialty: next });
   }
+  const setSpecialty = (name: string) => set({ specialty: name });
 
   const summary = useMemo(
     () => (
@@ -44,12 +49,30 @@ export default function CorridorStep({ locale }: { locale: string }) {
           </Chip>
         )}
         <Chip selected size="sm">
-          {corridor.label}
+          {corridor?.label}
         </Chip>
       </>
     ),
-    [specialty, corridor.label],
+    [specialty, corridor?.label],
   );
+
+  // No published corridor has a referable specialty yet — an admin must
+  // configure one before any referral can be created.
+  if (!corridor) {
+    return (
+      <WizardShell
+        locale={locale}
+        step="corridor"
+        lede="No destinations are available yet."
+      >
+        <p className="rounded-inner bg-warning-bg px-3.5 py-3 text-[13px] text-warning-text">
+          No corridors are currently open for referral. An administrator needs to
+          publish a corridor and add at least one specialty that isn&rsquo;t
+          routinely available on the NHS.
+        </p>
+      </WizardShell>
+    );
+  }
 
   return (
     <WizardShell
@@ -63,8 +86,8 @@ export default function CorridorStep({ locale }: { locale: string }) {
         <div>
           <SectionLabel className="mb-2">Destination hospital</SectionLabel>
           <div className="grid gap-3 sm:grid-cols-2">
-            {CORRIDOR_LIST.map((c) => {
-              const hospital = getDemoHospital(c.hospitalId);
+            {corridors.map((c) => {
+              const hospitalName = hospitalNames[c.primaryHospitalId ?? ""] ?? c.label;
               const selected = c.id === corridorId;
               return (
                 <button
@@ -88,9 +111,9 @@ export default function CorridorStep({ locale }: { locale: string }) {
                     {selected && <Check aria-hidden className="size-3.5" />}
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-[15px] font-medium text-ink">{hospital.name}</span>
+                    <span className="block text-[15px] font-medium text-ink">{hospitalName}</span>
                     <span className="block text-[13px] text-ink-secondary">
-                      {hospital.city}, {c.country} · {c.label}
+                      {c.country} · {c.label}
                     </span>
                     <span
                       className={cn(

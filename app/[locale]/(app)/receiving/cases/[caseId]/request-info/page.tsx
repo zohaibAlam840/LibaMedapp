@@ -3,7 +3,8 @@ import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
 import { Field, Textarea } from "@/components/ui/Field";
 import { SectionLabel } from "@/components/ui/Card";
-import { getDemoCase } from "@/lib/demo";
+import { notFound } from "next/navigation";
+import { getCase } from "@/lib/db/referrals";
 
 // 9D · Request additional information (#46) — without leaving the platform.
 export default async function Page({
@@ -12,7 +13,8 @@ export default async function Page({
   params: Promise<{ locale: string; caseId: string }>;
 }) {
   const { locale, caseId } = await params;
-  const c = getDemoCase(caseId);
+  const c = await getCase(caseId);
+  if (!c) notFound();
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-5">

@@ -1,7 +1,8 @@
 import { Card, CardTitle } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import { Field, Input, Select, Textarea } from "@/components/ui/Field";
-import { getDemoCase } from "@/lib/demo";
+import { notFound } from "next/navigation";
+import { getCase } from "@/lib/db/referrals";
 
 // 9D · Treatment plan response template (#45) — acceptance §14.5.
 // Structured response: plan + itemised cost estimate + timeline (C2C §8.2).
@@ -11,7 +12,8 @@ export default async function Page({
   params: Promise<{ locale: string; caseId: string }>;
 }) {
   const { locale, caseId } = await params;
-  const c = getDemoCase(caseId);
+  const c = await getCase(caseId);
+  if (!c) notFound();
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-5">

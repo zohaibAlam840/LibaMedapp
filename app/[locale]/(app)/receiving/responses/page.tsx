@@ -3,16 +3,30 @@ import { Card, CardTitle } from "@/components/ui/Card";
 import ListRow from "@/components/ui/ListRow";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import Chip from "@/components/ui/Chip";
-import { DEMO_CASES } from "@/lib/demo";
+import EmptyState from "@/components/ui/EmptyState";
+import { getCases } from "@/lib/db/referrals";
+import type { DemoCase } from "@/lib/demo";
 
 // Receiving · Responses (sidebar aggregation) — treatment plans and clinical
-// summaries this specialist has drafted or sent.
-const RESPONSES = [
-  { caseId: "LM-2026-0139", kind: "Treatment plan", state: "Sent", when: "2 days ago" },
-  { caseId: "LM-2026-0133", kind: "Treatment plan", state: "Draft", when: "Yesterday" },
-  { caseId: "LM-2026-0127", kind: "Clinical summary", state: "Sent", when: "5 days ago" },
-  { caseId: "LM-2026-0118", kind: "Clinical summary", state: "Sent", when: "1 week ago" },
-];
+// summaries this specialist has sent. Derived from case status: a plan exists
+// once the case has left review; a summary exists once it has been returned.
+interface Response {
+  caseRef: string;
+  kind: "Treatment plan" | "Clinical summary";
+  when: string;
+  c: DemoCase;
+}
+
+function responsesFor(cases: DemoCase[]): Response[] {
+  const out: Response[] = [];
+  for (const c of cases) {
+    const sentPlan = ["plan-received", "confirmed", "complete", "summary-returned"].includes(c.status);
+    if (sentPlan) out.push({ caseRef: c.ref, kind: "Treatment plan", when: c.updated, c });
+    if (c.status === "summary-returned")
+      out.push({ caseRef: c.ref, kind: "Clinical summary", when: c.updated, c });
+  }
+  return out;
+}
 
 export default async function Page({
   params,
@@ -20,7 +34,8 @@ export default async function Page({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
-  const target = (id: string) => DEMO_CASES.find((c) => c.id === id) ?? DEMO_CASES[0];
+  const cases = await getCases();
+  const responses = responsesFor(cases);
 
   return (
     <div className="flex flex-col gap-5">
@@ -34,51 +49,58 @@ export default async function Page({
       <Card>
         <CardTitle
           action={
-            <SegmentedControl
-              name="responses-filter"
-              defaultValue="all"
-              options={[
-                { value: "all", label: "All" },
-                { value: "plans", label: "Plans" },
-                { value: "summaries", label: "Summaries" },
-              ]}
-            />
+            responses.length > 0 ? (
+              <SegmentedControl
+                name="responses-filter"
+                defaultValue="all"
+                options={[
+                  { value: "all", label: "All" },
+                  { value: "plans", label: "Plans" },
+                  { value: "summaries", label: "Summaries" },
+                ]}
+              />
+            ) : undefined
           }
         >
-          {RESPONSES.length} responses
+          {responses.length} responses
         </CardTitle>
-        <div className="-mx-2 flex flex-col">
-          {RESPONSES.map((r) => {
-            const c = target(r.caseId);
-            const isPlan = r.kind === "Treatment plan";
-            return (
-              <ListRow
-                key={`${r.caseId}-${r.kind}`}
-                href={`/${locale}/receiving/cases/${c.id}/${isPlan ? "treatment-plan" : "summary"}`}
-                chevron
-                leading={
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent">
-                    {isPlan ? (
-                      <ClipboardList aria-hidden className="size-4.5" />
-                    ) : (
-                      <FileText aria-hidden className="size-4.5" />
-                    )}
-                  </span>
-                }
-                title={`${r.caseId} · ${r.kind}`}
-                subtitle={`${c.specialty} · ${c.hospital}`}
-                meta={r.when}
-                badge={
-                  r.state === "Draft" ? (
-                    <Chip size="sm" className="bg-warning-bg text-warning-text">Draft</Chip>
-                  ) : (
-                    <Chip size="sm" selected>Sent</Chip>
-                  )
-                }
-              />
-            );
-          })}
-        </div>
+        {responses.length === 0 ? (
+          <EmptyState
+            icon={ClipboardList}
+            title="No responses yet"
+            description="Treatment plans and clinical summaries you send appear here."
+          />
+        ) : (
+          <div className="-mx-2 flex flex-col">
+            {responses.map((r) => {
+              const isPlan = r.kind === "Treatment plan";
+              return (
+                <ListRow
+                  key={`${r.caseRef}-${r.kind}`}
+                  href={`/${locale}/receiving/cases/${r.c.id}/${isPlan ? "treatment-plan" : "summary"}`}
+                  chevron
+                  leading={
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent">
+                      {isPlan ? (
+                        <ClipboardList aria-hidden className="size-4.5" />
+                      ) : (
+                        <FileText aria-hidden className="size-4.5" />
+                      )}
+                    </span>
+                  }
+                  title={`${r.caseRef} · ${r.kind}`}
+                  subtitle={`${r.c.specialty} · ${r.c.hospital}`}
+                  meta={r.when}
+                  badge={
+                    <Chip size="sm" selected>
+                      Sent
+                    </Chip>
+                  }
+                />
+              );
+            })}
+          </div>
+        )}
       </Card>
     </div>
   );

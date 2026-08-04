@@ -21,6 +21,7 @@ export default async function PublicLayout({
     { href: "/how-it-works", label: t.nav.howItWorks },
     { href: "/specialties", label: t.nav.specialties },
     { href: "/hospitals", label: t.nav.hospitals },
+    { href: "/corridors", label: t.nav.corridors },
     { href: "/pledge", label: t.nav.pledge },
     { href: "/for-clinicians", label: t.nav.forClinicians },
   ];

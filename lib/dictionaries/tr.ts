@@ -5,6 +5,7 @@ export const tr: Dictionary = {
     forClinicians: "Klinisyenler için",
     pledge: "Taahhüt",
     hospitals: "Hastaneler",
+    corridors: "Koridorlar",
     specialties: "Uzmanlıklar",
     howItWorks: "Nasıl çalışır",
     login: "Giriş yap",
@@ -58,7 +59,8 @@ export const tr: Dictionary = {
       { title: "İncele ve planla", description: "Uzman, platform içinde ayrıntılı maliyet tahmini ve takvimle bir tedavi planı gönderir." },
       { title: "İngiltere bakımına geri teslim", description: "Tedaviden sonra, yapılandırılmış bir klinik özet 5 iş günü içinde sevk eden klinisyene döner." },
     ],
-    corridorsTitle: "Lansmanda dört koridor",
+    corridorsTitle: "Nereye yönlendiriyoruz",
+    corridorsCta: "Tüm koridorları görün",
     corridorsLede:
       "Her koridor kendi veri koruma kurallarını her dosyaya otomatik olarak uygular.",
     pledgeTitle: "LibaMed Taahhüdü",

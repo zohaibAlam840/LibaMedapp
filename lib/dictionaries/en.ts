@@ -5,6 +5,7 @@ export const en: Dictionary = {
     forClinicians: "For clinicians",
     pledge: "The Pledge",
     hospitals: "Hospitals",
+    corridors: "Corridors",
     specialties: "Specialties",
     howItWorks: "How it works",
     login: "Log in",
@@ -58,7 +59,8 @@ export const en: Dictionary = {
       { title: "Review and plan", description: "The specialist returns a treatment plan with an itemised cost estimate and timeline, inside the platform." },
       { title: "Hand back to UK care", description: "After treatment, a structured clinical summary returns to the referring clinician within 5 working days." },
     ],
-    corridorsTitle: "Four corridors at launch",
+    corridorsTitle: "Where we refer",
+    corridorsCta: "Explore all corridors",
     corridorsLede:
       "Each corridor carries its own data-protection rules, applied automatically to every case.",
     pledgeTitle: "The LibaMed Pledge",

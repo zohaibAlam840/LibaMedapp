@@ -3,15 +3,17 @@ import { ArrowRight, BadgeCheck, MapPin } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import Avatar from "@/components/ui/Avatar";
 import Chip from "@/components/ui/Chip";
-import { DEMO_HOSPITALS } from "@/lib/demo";
+import { getHospitals } from "@/lib/db/hospitals";
 
-// 9A · Partner hospitals list (#5).
+// 9A · Partner hospitals list (#5). Public site shows only published partners
+// (admin controls this via the publish toggle on /admin/hospitals).
 export default async function Page({
   params,
 }: {
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+  const hospitals = (await getHospitals()).filter((h) => h.published);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-12 md:px-8">
@@ -25,7 +27,7 @@ export default async function Page({
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        {DEMO_HOSPITALS.map((h) => (
+        {hospitals.map((h) => (
           <Link key={h.id} href={`/${locale}/hospitals/${h.id}`} className="group">
             <Card className="flex h-full flex-col gap-4 p-6 transition-shadow group-hover:shadow-elevated">
               <div className="flex items-center gap-3">

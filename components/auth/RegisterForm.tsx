@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState, useState } from "react";
 import Link from "next/link";
-import { Briefcase, Check, ShieldCheck, Stethoscope } from "lucide-react";
+import { Briefcase, Check, ShieldCheck, Stethoscope, TriangleAlert } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Checkbox from "@/components/ui/Checkbox";
 import { Field, Input, Select } from "@/components/ui/Field";
 import { SectionLabel } from "@/components/ui/Card";
 import { cn } from "@/lib/cn";
+import { signUpAction, type AuthState } from "@/lib/authActions";
 
 // 9B · Register — two entry points behind one screen:
 //  · "clinician"  — referring doctor; GMC-verified (kept EXACTLY as before).
@@ -51,9 +52,15 @@ export default function RegisterForm({ locale }: { locale: string }) {
   // Submit gate: attestation is mandatory, a regulatory status must be chosen,
   // and if FCA-regulated the number must be a valid 6 digits.
   const introReady = attested && regStatus !== "" && (regStatus === "employer" || fcaValid);
+  const [state, action, pending] = useActionState<AuthState, FormData>(signUpAction, {});
 
   return (
-    <div className="flex flex-col gap-5">
+    <form action={action} className="flex flex-col gap-5">
+      <input type="hidden" name="locale" value={locale} />
+      <input type="hidden" name="mode" value={mode} />
+      <input type="hidden" name="regStatus" value={regStatus} />
+      <input type="hidden" name="attested" value={String(attested)} />
+
       {/* Entry-point toggle */}
       <div
         role="tablist"
@@ -93,10 +100,10 @@ export default function RegisterForm({ locale }: { locale: string }) {
       {/* Shared identity fields */}
       <div className="grid grid-cols-2 gap-3">
         <Field label="First name" htmlFor="first-name">
-          <Input id="first-name" autoComplete="given-name" />
+          <Input id="first-name" name="firstName" autoComplete="given-name" required />
         </Field>
         <Field label="Last name" htmlFor="last-name">
-          <Input id="last-name" autoComplete="family-name" />
+          <Input id="last-name" name="lastName" autoComplete="family-name" required />
         </Field>
       </div>
 
@@ -107,8 +114,10 @@ export default function RegisterForm({ locale }: { locale: string }) {
       >
         <Input
           id="email"
+          name="email"
           type="email"
           autoComplete="email"
+          required
           placeholder={introducer ? "name@company.com" : "name@nhs.net"}
         />
       </Field>
@@ -116,11 +125,11 @@ export default function RegisterForm({ locale }: { locale: string }) {
       {introducer ? (
         <>
           <Field label="Company / organisation name" htmlFor="org">
-            <Input id="org" autoComplete="organization" placeholder="e.g. Meridian Health Partners" />
+            <Input id="org" name="org" autoComplete="organization" required placeholder="e.g. Meridian Health Partners" />
           </Field>
 
           <Field label="Job title" htmlFor="job-title" hint="Helps our reviewers where there’s no register to check.">
-            <Input id="job-title" autoComplete="organization-title" placeholder="e.g. Senior case manager" />
+            <Input id="job-title" name="jobTitle" autoComplete="organization-title" required placeholder="e.g. Senior case manager" />
           </Field>
 
           {/* Regulatory status — drives which verification path fires */}
@@ -167,6 +176,7 @@ export default function RegisterForm({ locale }: { locale: string }) {
             >
               <Input
                 id="fca"
+                name="fca"
                 inputMode="numeric"
                 maxLength={6}
                 value={fca}
@@ -198,7 +208,7 @@ export default function RegisterForm({ locale }: { locale: string }) {
       ) : (
         <>
           <Field label="Registration body" htmlFor="body">
-            <Select id="body" defaultValue="gmc">
+            <Select id="body" name="body" defaultValue="gmc">
               <option value="gmc">GMC (United Kingdom)</option>
               <option value="us" disabled>
                 US state medical board — coming soon
@@ -207,28 +217,29 @@ export default function RegisterForm({ locale }: { locale: string }) {
           </Field>
 
           <Field label="GMC number" htmlFor="gmc" hint="7 digits — checked against the public GMC register.">
-            <Input id="gmc" inputMode="numeric" placeholder="1234567" />
+            <Input id="gmc" name="gmc" inputMode="numeric" placeholder="1234567" />
           </Field>
         </>
       )}
 
-      <Field label="Password" htmlFor="password">
-        <Input id="password" type="password" autoComplete="new-password" />
+      <Field label="Password" htmlFor="password" hint="At least 8 characters.">
+        <Input id="password" name="password" type="password" autoComplete="new-password" required />
       </Field>
 
+      {state.error && (
+        <p className="flex items-start gap-2 rounded-inner bg-danger-bg px-3.5 py-2.5 text-[13px] text-danger-text">
+          <TriangleAlert aria-hidden className="mt-0.5 size-4 shrink-0" />
+          {state.error}
+        </p>
+      )}
+
       {introducer ? (
-        introReady ? (
-          <Button href={`/${locale}/register/introducer-review?status=${regStatus}`} className="w-full">
-            Create introducer account
-          </Button>
-        ) : (
-          <Button disabled className="w-full">
-            Create introducer account
-          </Button>
-        )
+        <Button type="submit" disabled={!introReady} loading={pending} className="w-full">
+          Create introducer account
+        </Button>
       ) : (
-        <Button href={`/${locale}/register/gmc-verification`} className="w-full">
-          Continue to verification
+        <Button type="submit" loading={pending} className="w-full">
+          Create account
         </Button>
       )}
 
@@ -238,6 +249,6 @@ export default function RegisterForm({ locale }: { locale: string }) {
           Log in
         </Link>
       </p>
-    </div>
+    </form>
   );
 }

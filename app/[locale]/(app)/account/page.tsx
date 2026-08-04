@@ -5,7 +5,8 @@ import Avatar from "@/components/ui/Avatar";
 import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
 import { Field, Input, Select } from "@/components/ui/Field";
-import { DEMO_USER } from "@/lib/demo";
+import { getSessionUser } from "@/lib/auth";
+import { ROLE_LABEL } from "@/lib/rbac";
 import { LOCALES, LOCALE_LABELS } from "@/lib/i18n";
 
 // 9B · Profile & settings.
@@ -15,6 +16,8 @@ export default async function Page({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+  const user = await getSessionUser();
+  const name = user?.name ?? "";
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -22,28 +25,30 @@ export default async function Page({
 
       <div className="flex flex-col gap-5">
         <Card className="flex items-center gap-4">
-          <Avatar name={DEMO_USER.name} size="lg" />
+          <Avatar name={name} size="lg" />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-lg font-semibold text-ink">{DEMO_USER.name}</p>
-            <p className="text-sm text-ink-secondary">{DEMO_USER.role}</p>
+            <p className="truncate text-lg font-semibold text-ink">{name}</p>
+            <p className="text-sm text-ink-secondary">{user ? ROLE_LABEL[user.role] : ""}</p>
           </div>
-          <Chip selected size="sm">
-            <BadgeCheck aria-hidden className="size-3.5" />
-            GMC {DEMO_USER.gmc} verified
-          </Chip>
+          {user?.gmcNumber && (
+            <Chip selected size="sm">
+              <BadgeCheck aria-hidden className="size-3.5" />
+              GMC {user.gmcNumber} verified
+            </Chip>
+          )}
         </Card>
 
         <Card>
           <CardTitle>Details</CardTitle>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Full name" htmlFor="name">
-              <Input id="name" defaultValue={DEMO_USER.name} />
+              <Input id="name" defaultValue={name} />
             </Field>
             <Field label="Work email" htmlFor="email">
-              <Input id="email" type="email" defaultValue="a.chen@nhs.net" />
+              <Input id="email" type="email" defaultValue={user?.email ?? ""} />
             </Field>
             <Field label="Practice / trust" htmlFor="org">
-              <Input id="org" defaultValue="Riverside Medical Practice, London" />
+              <Input id="org" defaultValue="" />
             </Field>
             <Field label="Language" htmlFor="lang">
               <Select id="lang" defaultValue={locale}>

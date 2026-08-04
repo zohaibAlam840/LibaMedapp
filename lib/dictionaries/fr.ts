@@ -5,6 +5,7 @@ export const fr: Dictionary = {
     forClinicians: "Pour les cliniciens",
     pledge: "L’engagement",
     hospitals: "Hôpitaux",
+    corridors: "Couloirs",
     specialties: "Spécialités",
     howItWorks: "Comment ça marche",
     login: "Se connecter",
@@ -58,7 +59,8 @@ export const fr: Dictionary = {
       { title: "Examiner et planifier", description: "Le spécialiste renvoie un plan de traitement avec un devis détaillé et un calendrier, dans la plateforme." },
       { title: "Retour aux soins britanniques", description: "Après le traitement, un compte rendu clinique structuré revient au clinicien référent sous 5 jours ouvrés." },
     ],
-    corridorsTitle: "Quatre couloirs au lancement",
+    corridorsTitle: "Où nous orientons",
+    corridorsCta: "Explorer tous les couloirs",
     corridorsLede:
       "Chaque couloir applique automatiquement ses propres règles de protection des données à chaque dossier.",
     pledgeTitle: "L’engagement LibaMed",

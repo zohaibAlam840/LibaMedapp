@@ -22,3 +22,21 @@ export const INTAKE_STEPS: IntakeStep[] = [
 export function intakeStepIndex(id: string): number {
   return Math.max(0, INTAKE_STEPS.findIndex((s) => s.id === id));
 }
+
+// Itemised patient-consent wording (NHS-safeguard item 6). Shared by the consent
+// step (display) and the submit action (what gets stored). `{country}` is filled
+// from the chosen corridor at render/submit time.
+export const CONSENT_VERSION = "v2026-07";
+
+export interface ConsentItemDef {
+  id: string;
+  label: string;
+}
+
+export const CONSENT_ITEM_DEFS: ConsentItemDef[] = [
+  { id: "share", label: "My records will be shared with the named receiving specialist in {country}" },
+  { id: "safeguard", label: "I understand the legal safeguard for this transfer" },
+  { id: "categories", label: "The categories of data being shared (referral letter, labs, imaging incl. DICOM)" },
+  { id: "purpose", label: "Purpose is limited to this referral" },
+  { id: "withdraw", label: "I can withdraw consent at any time" },
+];

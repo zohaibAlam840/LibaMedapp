@@ -6,7 +6,8 @@ import DetailPanelRow from "@/components/ui/DetailPanelRow";
 import ResponsiveTable from "@/components/ui/ResponsiveTable";
 import StatusChip from "@/components/ui/StatusChip";
 import StatusTracker from "@/components/case/StatusTracker";
-import { DEMO_SPECIALIST, DEMO_USER, getDemoCase } from "@/lib/demo";
+import { notFound } from "next/navigation";
+import { getCase } from "@/lib/db/referrals";
 
 // 9E · Case oversight detail (#51): governance view — timeline, clinicians,
 // residency + consent confirmation, document-access log, admin actions.
@@ -24,7 +25,8 @@ export default async function Page({
   params: Promise<{ locale: string; caseId: string }>;
 }) {
   const { caseId } = await params;
-  const c = getDemoCase(caseId);
+  const c = await getCase(caseId);
+  if (!c) notFound();
 
   return (
     <div className="flex flex-col gap-5">
@@ -103,8 +105,8 @@ export default async function Page({
             <SectionLabel className="mb-3">Clinicians on this case</SectionLabel>
             <div className="flex flex-col gap-3">
               {[
-                { ...DEMO_USER, side: "Referring" },
-                { ...DEMO_SPECIALIST, side: "Receiving" },
+                { name: c.referrer || "Not recorded", role: "Referring clinician", side: "Referring" },
+                { name: c.specialist || "Not yet assigned", role: c.hospital, side: "Receiving" },
               ].map((p) => (
                 <div key={p.name} className="flex items-center gap-3">
                   <Avatar name={p.name} size="md" />

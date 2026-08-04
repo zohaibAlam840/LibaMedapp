@@ -1,22 +1,18 @@
-import { Plus, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { Card, CardTitle } from "@/components/ui/Card";
 import Avatar from "@/components/ui/Avatar";
-import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
 import ResponsiveTable from "@/components/ui/ResponsiveTable";
+import InviteUserForm from "@/components/admin/InviteUserForm";
 import { ROLE_LABEL } from "@/lib/rbac";
+import { getUsers } from "@/lib/db/users";
+import { getHospitals } from "@/lib/db/hospitals";
+import { formatDate } from "@/lib/db/format";
 
 // 9E · User & role management (#56). Gated on `canManageUsers` (Vol III §0.4).
-// Only referring clinicians self-register; every other role is invited here.
-const USERS = [
-  { name: "Dr. Amara Chen", email: "a.chen@nhs.net", role: "referring", org: "Riverside Medical Practice", mfa: true, verified: true, last: "2h ago" },
-  { name: "Dr. Noa Peretz", email: "n.peretz@sheba.health.il", role: "receiving", org: "Sheba Medical Center", mfa: true, verified: true, last: "1d ago" },
-  { name: "Yael Adler", email: "y.adler@sheba.health.il", role: "coordinator", org: "Sheba Medical Center", mfa: true, verified: true, last: "3h ago" },
-  { name: "Jordan Ellis", email: "j.ellis@libamed.co.uk", role: "caseManager", org: "LibaMed", mfa: true, verified: true, last: "20m ago" },
-  { name: "Sam Okafor", email: "s.okafor@libamed.co.uk", role: "admin", org: "LibaMed", mfa: true, verified: true, last: "Active now" },
-  { name: "Dr. Claire Moreau", email: "c.moreau@hopital-foch.fr", role: "receiving", org: "Hôpital Foch", mfa: false, verified: true, last: "5d ago" },
-] as const;
-
+// Only referring clinicians self-register; every other role is invited here —
+// the invite creates a real account (auth user + profile) and returns a
+// one-time password. The list reflects the live profiles table.
 const ROLE_TONE: Record<string, string> = {
   referring: "bg-accent-soft text-accent",
   receiving: "bg-warning-bg text-warning-text",
@@ -25,10 +21,18 @@ const ROLE_TONE: Record<string, string> = {
   admin: "bg-success-bg text-success-text",
 };
 
-export default async function Page() {
+const TYPE_LABEL: Record<string, string> = {
+  introducer: "Introducer",
+  patient: "Patient",
+};
+
+export default async function Page({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  const [users, hospitals] = await Promise.all([getUsers(), getHospitals()]);
+
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-[28px] font-semibold text-ink">Users &amp; roles</h1>
           <p className="mt-1 text-[15px] text-ink-secondary">
@@ -36,56 +40,63 @@ export default async function Page() {
             all other roles are invited.
           </p>
         </div>
-        <Button>
-          <Plus aria-hidden className="size-4" /> Invite user
-        </Button>
+        <InviteUserForm locale={locale} hospitals={hospitals.map((h) => ({ id: h.id, name: h.name }))} />
       </div>
 
       <Card>
-        <CardTitle>All users</CardTitle>
-        <ResponsiveTable
-          columns={[
-            { key: "name", label: "User" },
-            { key: "role", label: "Role" },
-            { key: "org", label: "Organisation" },
-            { key: "mfa", label: "MFA" },
-            { key: "last", label: "Last active" },
-            { key: "actions", label: "" },
-          ]}
-          rows={USERS.map((u) => ({
-            id: u.email,
-            cells: {
-              name: (
-                <span className="flex items-center gap-2.5 font-medium">
-                  <Avatar name={u.name} size="sm" />
-                  <span>
-                    {u.name}
-                    <span className="block text-xs font-normal text-ink-muted">{u.email}</span>
-                  </span>
-                </span>
-              ),
-              role: (
-                <Chip size="sm" className={ROLE_TONE[u.role]}>
-                  {ROLE_LABEL[u.role]}
-                </Chip>
-              ),
-              org: u.org,
-              mfa: u.mfa ? (
-                <span className="inline-flex items-center gap-1 text-[13px] text-success-text">
-                  <ShieldCheck aria-hidden className="size-3.5" /> On
-                </span>
-              ) : (
-                <span className="text-[13px] text-danger-text">Not enrolled</span>
-              ),
-              last: u.last,
-              actions: (
-                <button className="text-[13px] font-medium text-accent hover:underline">
-                  Edit
-                </button>
-              ),
-            },
-          }))}
-        />
+        <CardTitle>All users · {users.length}</CardTitle>
+        {users.length === 0 ? (
+          <p className="rounded-inner bg-subtle px-3.5 py-3 text-[13px] text-ink-muted">
+            No users yet. Invite your first team member above.
+          </p>
+        ) : (
+          <ResponsiveTable
+            columns={[
+              { key: "name", label: "User" },
+              { key: "role", label: "Role" },
+              { key: "org", label: "Organisation" },
+              { key: "status", label: "Status" },
+              { key: "created", label: "Created" },
+            ]}
+            rows={users.map((u) => {
+              const roleKey = u.role ?? u.accountType;
+              const roleLabel = u.role
+                ? ROLE_LABEL[u.role]
+                : TYPE_LABEL[u.accountType] ?? u.accountType;
+              return {
+                id: u.id,
+                cells: {
+                  name: (
+                    <span className="flex items-center gap-2.5 font-medium">
+                      <Avatar name={u.name} size="sm" />
+                      <span>
+                        {u.name}
+                        <span className="block text-xs font-normal text-ink-muted">{u.email}</span>
+                      </span>
+                    </span>
+                  ),
+                  role: (
+                    <Chip size="sm" className={ROLE_TONE[roleKey] ?? "bg-subtle text-ink-secondary"}>
+                      {roleLabel}
+                    </Chip>
+                  ),
+                  org: u.org || "—",
+                  status:
+                    u.status === "verified" ? (
+                      <span className="inline-flex items-center gap-1 text-[13px] text-success-text">
+                        <ShieldCheck aria-hidden className="size-3.5" /> Verified
+                      </span>
+                    ) : u.status === "pending" ? (
+                      <span className="text-[13px] text-warning-text">Pending review</span>
+                    ) : (
+                      <span className="text-[13px] text-danger-text">Declined</span>
+                    ),
+                  created: formatDate(u.createdAt),
+                },
+              };
+            })}
+          />
+        )}
       </Card>
 
       <Card>

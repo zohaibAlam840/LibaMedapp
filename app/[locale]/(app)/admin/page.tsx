@@ -5,7 +5,7 @@ import DetailPanelRow from "@/components/ui/DetailPanelRow";
 import ListRow from "@/components/ui/ListRow";
 import StatCard from "@/components/ui/StatCard";
 import StatusChip from "@/components/ui/StatusChip";
-import { DEMO_CASES } from "@/lib/demo";
+import { getCases } from "@/lib/db/referrals";
 
 // 9E · Admin dashboard (#50) — case flow across corridors, consent + residency
 // confirmation per case (C2C spec §8.3). Rich analytics deferred to V1.5.
@@ -22,6 +22,7 @@ export default async function Page({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+  const cases = await getCases();
 
   return (
     <div className="flex flex-col gap-6">
@@ -65,7 +66,7 @@ export default async function Page({
             Live case flow
           </CardTitle>
           <div className="-mx-2 flex flex-col">
-            {DEMO_CASES.map((c) => (
+            {cases.map((c) => (
               <ListRow
                 key={c.id}
                 href={`/${locale}/admin/cases/${c.id}`}

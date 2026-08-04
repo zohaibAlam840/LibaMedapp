@@ -7,8 +7,7 @@ import SegmentedControl from "@/components/ui/SegmentedControl";
 import StatusChip from "@/components/ui/StatusChip";
 import HandbackBadge from "@/components/ui/HandbackBadge";
 import { CorridorBadge } from "@/components/ui/Badges";
-import { DEMO_CASES } from "@/lib/demo";
-import { getReferralCompliance } from "@/lib/referral";
+import { getCases, getReferralCompliance } from "@/lib/db/referrals";
 
 // Referring · My cases (sidebar aggregation) — full filterable list of the
 // clinician's own cases. Beyond the 67 V1 pages; a navigation landing page.
@@ -20,6 +19,8 @@ export default async function Page({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+  const cases = await getCases();
+  const records = await Promise.all(cases.map((c) => getReferralCompliance(c.ref)));
 
   return (
     <div className="flex flex-col gap-5">
@@ -45,12 +46,12 @@ export default async function Page({
               />
             }
           >
-            {DEMO_CASES.length} cases
+            {cases.length} cases
           </CardTitle>
           <SearchInput placeholder="Search by case or patient reference" className="mb-3" />
           <div className="-mx-2 flex flex-col">
-            {DEMO_CASES.map((c) => {
-              const record = getReferralCompliance(c.id);
+            {cases.map((c, i) => {
+              const record = records[i];
               return (
                 <ListRow
                   key={c.id}

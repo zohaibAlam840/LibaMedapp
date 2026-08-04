@@ -2,7 +2,8 @@ import { Timer } from "lucide-react";
 import { Card, CardTitle } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import { Field, Input, Textarea } from "@/components/ui/Field";
-import { getDemoCase } from "@/lib/demo";
+import { notFound } from "next/navigation";
+import { getCase } from "@/lib/db/referrals";
 
 // 9D · Submit clinical summary (#48) — acceptance §14.8.
 // Structured handback to the UK referrer within 5 working days (Pledge).
@@ -12,7 +13,8 @@ export default async function Page({
   params: Promise<{ locale: string; caseId: string }>;
 }) {
   const { locale, caseId } = await params;
-  const c = getDemoCase(caseId);
+  const c = await getCase(caseId);
+  if (!c) notFound();
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-5">

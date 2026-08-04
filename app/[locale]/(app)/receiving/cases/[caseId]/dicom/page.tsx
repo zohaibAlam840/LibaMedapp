@@ -1,7 +1,8 @@
 import { Download, HardDriveDownload, ScanLine } from "lucide-react";
 import { Card, CardTitle } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
-import { getDemoCase } from "@/lib/demo";
+import { notFound } from "next/navigation";
+import { getCase } from "@/lib/db/referrals";
 
 // 9D · DICOM download view (#44). V1 = secure download only — the embedded
 // viewer is deferred to V2 (evaluate OHIF; C2C spec §2.5/§16).
@@ -17,7 +18,8 @@ export default async function Page({
   params: Promise<{ locale: string; caseId: string }>;
 }) {
   const { caseId } = await params;
-  const c = getDemoCase(caseId);
+  const c = await getCase(caseId);
+  if (!c) notFound();
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-5">

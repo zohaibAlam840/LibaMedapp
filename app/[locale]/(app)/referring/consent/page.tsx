@@ -2,7 +2,7 @@ import { ScrollText } from "lucide-react";
 import { Card, CardTitle } from "@/components/ui/Card";
 import ListRow from "@/components/ui/ListRow";
 import Chip from "@/components/ui/Chip";
-import { DEMO_CASES } from "@/lib/demo";
+import { getCases } from "@/lib/db/referrals";
 
 // Referring · Consent (sidebar aggregation) — every consent record across the
 // clinician's cases. Each links to that case's itemised consent + withdrawal.
@@ -12,6 +12,7 @@ export default async function Page({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+  const cases = await getCases();
 
   return (
     <div className="flex flex-col gap-5">
@@ -26,7 +27,7 @@ export default async function Page({
       <Card>
         <CardTitle>Across your cases</CardTitle>
         <div className="-mx-2 flex flex-col">
-          {DEMO_CASES.map((c, i) => {
+          {cases.map((c, i) => {
             const withdrawn = c.status === "consent-withdrawn";
             const expiringSoon = i === 1;
             return (

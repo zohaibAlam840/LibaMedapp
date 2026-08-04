@@ -1,5 +1,5 @@
 import { ShieldCheck, TriangleAlert } from "lucide-react";
-import type { CorridorConfig } from "@/lib/corridors";
+import type { CorridorTransferInfo } from "@/lib/corridors";
 import { cn } from "@/lib/cn";
 
 /**
@@ -12,7 +12,7 @@ export default function TransferBasisNotice({
   corridor,
   className,
 }: {
-  corridor: CorridorConfig;
+  corridor: CorridorTransferInfo;
   className?: string;
 }) {
   const scc = corridor.transferBasis === "scc";

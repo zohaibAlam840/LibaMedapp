@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import {
   ArrowRight,
   Download,
@@ -18,9 +19,11 @@ import StatusChip from "@/components/ui/StatusChip";
 import HandbackBadge from "@/components/ui/HandbackBadge";
 import NoFeeNotice from "@/components/ui/NoFeeNotice";
 import StatusTracker from "@/components/case/StatusTracker";
-import { DEMO_DOCUMENTS, getDemoCase } from "@/lib/demo";
-import { getCorridor } from "@/lib/corridors";
-import { getReferralCompliance, NON_SUBSTITUTION_LABELS } from "@/lib/referral";
+import CaseActionBar from "@/components/case/CaseActionBar";
+import DocumentUpload from "@/components/case/DocumentUpload";
+import { getCorridorRecord } from "@/lib/db/corridors";
+import { NON_SUBSTITUTION_LABELS } from "@/lib/referral";
+import { getCase, getDocuments, getReferralCompliance } from "@/lib/db/referrals";
 
 // 9C · Case detail (#37): header + status tracker + documents + meta.
 export default async function Page({
@@ -29,10 +32,13 @@ export default async function Page({
   params: Promise<{ locale: string; caseId: string }>;
 }) {
   const { locale, caseId } = await params;
-  const c = getDemoCase(caseId);
+  // getCase is scoped to the session — null means "not yours" or "doesn't exist".
+  const c = await getCase(caseId);
+  if (!c) notFound();
   const base = `/${locale}/referring/cases/${c.id}`;
-  const record = getReferralCompliance(caseId);
-  const corridor = getCorridor(c.corridor);
+  const record = await getReferralCompliance(caseId);
+  const documents = await getDocuments(caseId);
+  const corridor = await getCorridorRecord(c.corridor);
 
   return (
     <div className="flex flex-col gap-5">
@@ -56,25 +62,24 @@ export default async function Page({
         </div>
       </div>
 
-      {/* Status tracker */}
+      {/* Status tracker + next action */}
       <Card>
         <StatusTracker status={c.status} />
+        <div className="mt-4 border-t border-line pt-4">
+          <CaseActionBar locale={locale} side="referring" caseRef={c.ref} status={c.status} />
+        </div>
       </Card>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         {/* Documents */}
         <Card>
           <CardTitle
-            action={
-              <Button variant="secondary" size="sm">
-                Upload more
-              </Button>
-            }
+            action={<DocumentUpload caseRef={c.ref} locale={locale} side="referring" />}
           >
             Documents
           </CardTitle>
           <ul className="flex flex-col gap-2">
-            {DEMO_DOCUMENTS.map((doc) => (
+            {documents.map((doc) => (
               <li
                 key={doc.name}
                 className="flex items-center gap-3 rounded-inner border border-line px-3.5 py-3"
@@ -131,7 +136,7 @@ export default async function Page({
                 <DetailPanelRow
                   icon={Globe2}
                   label="Data-transfer basis"
-                  value={corridor.transferBasis === "scc" ? "SCC / IDTA" : "UK adequacy"}
+                  value={corridor?.transferBasis === "scc" ? "SCC / IDTA" : "UK adequacy"}
                 />
                 <DetailPanelRow
                   icon={ScrollText}

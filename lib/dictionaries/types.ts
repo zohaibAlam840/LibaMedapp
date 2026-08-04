@@ -24,6 +24,7 @@ export interface Dictionary {
     forClinicians: string;
     pledge: string;
     hospitals: string;
+    corridors: string;
     specialties: string;
     howItWorks: string;
     login: string;
@@ -53,6 +54,7 @@ export interface Dictionary {
     pathwayLede: string;
     pathway: StepTD[];
     corridorsTitle: string;
+    corridorsCta: string;
     corridorsLede: string;
     pledgeTitle: string;
     pledgeBody: string;

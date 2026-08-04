@@ -4,7 +4,7 @@ import Button from "@/components/ui/Button";
 import NumberedStepStrip from "@/components/ui/NumberedStepStrip";
 import { AccordionItem } from "@/components/ui/Accordion";
 import { FAQS } from "@/lib/marketing";
-import { CORRIDOR_LIST } from "@/lib/corridors";
+import { getPublishedCorridors } from "@/lib/db/corridors";
 
 // 9A · For clinicians (spec V2 page 7): hero → benefits → GMC explainer →
 // what you'll need → data handling → FAQ → CTA.
@@ -14,6 +14,7 @@ export default async function Page({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+  const corridors = await getPublishedCorridors();
   const base = `/${locale}`;
 
   return (
@@ -135,7 +136,7 @@ export default async function Page({
                 The legal basis for each transfer — shown to you again before you submit.
               </p>
               <ul className="mt-4 flex flex-col divide-y divide-line">
-                {CORRIDOR_LIST.map((c) => (
+                {corridors.map((c) => (
                   <li key={c.id} className="flex items-center justify-between gap-3 py-2.5">
                     <span className="text-sm font-medium text-ink">{c.country}</span>
                     <span

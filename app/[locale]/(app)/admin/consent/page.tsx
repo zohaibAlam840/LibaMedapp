@@ -4,13 +4,15 @@ import Chip from "@/components/ui/Chip";
 import SearchInput from "@/components/ui/SearchInput";
 import ResponsiveTable from "@/components/ui/ResponsiveTable";
 import { CorridorBadge } from "@/components/ui/Badges";
-import { DEMO_CASES } from "@/lib/demo";
+import { getCases } from "@/lib/db/referrals";
 
 // 9E · Consent records viewer (#58) — acceptance §14.7. Each record shows the
 // exact wording shown at the time, per-item grants, and the withdrawal history.
 const CODE: Record<string, string> = { israel: "IL", france: "FR", turkey: "TR", switzerland: "CH" };
 
 export default async function Page() {
+  const cases = await getCases();
+
   return (
     <div className="flex flex-col gap-5">
       <div>
@@ -33,7 +35,7 @@ export default async function Page() {
             { key: "captured", label: "Captured" },
             { key: "status", label: "Status" },
           ]}
-          rows={DEMO_CASES.map((c, i) => ({
+          rows={cases.map((c, i) => ({
             id: c.id,
             cells: {
               ref: (

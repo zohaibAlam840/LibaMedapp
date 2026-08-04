@@ -4,7 +4,7 @@ import Avatar from "@/components/ui/Avatar";
 import ListRow from "@/components/ui/ListRow";
 import StatCard from "@/components/ui/StatCard";
 import StatusChip from "@/components/ui/StatusChip";
-import { DEMO_CASES } from "@/lib/demo";
+import { getCases } from "@/lib/db/referrals";
 
 // 9D · Hospital coordinator dashboard (#49) — hospital-side operations view.
 export default async function Page({
@@ -13,6 +13,7 @@ export default async function Page({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+  const cases = await getCases();
 
   return (
     <div className="flex flex-col gap-6">
@@ -40,7 +41,7 @@ export default async function Page({
         <Card>
           <CardTitle>Recent cases</CardTitle>
           <div className="-mx-2 flex flex-col">
-            {DEMO_CASES.slice(0, 4).map((c) => (
+            {cases.slice(0, 4).map((c) => (
               <ListRow
                 key={c.id}
                 href={`/${locale}/receiving/cases/${c.id}`}

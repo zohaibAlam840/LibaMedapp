@@ -5,6 +5,7 @@ export const he: Dictionary = {
     forClinicians: "לרופאים",
     pledge: "ההתחייבות",
     hospitals: "בתי חולים",
+    corridors: "מסדרונות",
     specialties: "התמחויות",
     howItWorks: "איך זה עובד",
     login: "התחברות",
@@ -58,7 +59,8 @@ export const he: Dictionary = {
       { title: "בדיקה ותכנון", description: "המומחה מחזיר תוכנית טיפול עם הערכת עלות מפורטת ולוח זמנים, בתוך הפלטפורמה." },
       { title: "החזרה לטיפול בבריטניה", description: "לאחר הטיפול, סיכום קליני מובנה חוזר לרופא המפנה תוך 5 ימי עבודה." },
     ],
-    corridorsTitle: "ארבעה מסדרונות בהשקה",
+    corridorsTitle: "לאן אנחנו מפנים",
+    corridorsCta: "לכל המסדרונות",
     corridorsLede:
       "כל מסדרון מחיל אוטומטית את כללי הגנת הנתונים שלו על כל תיק.",
     pledgeTitle: "התחייבות LibaMed",

@@ -1,18 +1,17 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { Sidebar, BottomTabs } from "@/components/shell/AppNav";
-import TopBarCluster from "@/components/ui/TopBarCluster";
+import UserMenu from "@/components/auth/UserMenu";
 import LocaleSwitcher from "@/components/shell/LocaleSwitcher";
-import {
-  DEMO_ROLE_COOKIE,
-  DEMO_ROLE_SIDEBAR_COOKIE,
-  parseRole,
-} from "@/lib/demoRole";
+import { getSessionUser } from "@/lib/auth";
+import { ROLE_LABEL } from "@/lib/rbac";
+import { DEMO_ROLE_SIDEBAR_COOKIE } from "@/lib/demoRole";
 
-// Authenticated app shell (Vol III §0.2): one app, three experiences. The
-// sidebar, dashboard, and permissions swap by role. The active demo role and
-// the sidebar collapse state come from cookies; real RBAC is enforced
-// server-side once auth lands.
+// Authenticated app shell (Vol III §0.2): one app, three experiences by role.
+// Access is now gated by a real Supabase session — non-clinicians and
+// unauthenticated visitors are redirected to /login. (Per the proxy docs,
+// authz is enforced here + in each server action, not by the proxy alone.)
 
 export default async function AppLayout({
   children,
@@ -22,13 +21,19 @@ export default async function AppLayout({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+
+  const user = await getSessionUser();
+  if (!user || user.accountType !== "clinician") {
+    redirect(`/${locale}/login`);
+  }
+
+  const role = user.role;
   const store = await cookies();
-  const role = parseRole(store.get(DEMO_ROLE_COOKIE)?.value);
   const collapsed = store.get(DEMO_ROLE_SIDEBAR_COOKIE)?.value === "collapsed";
 
   return (
     <div className="flex min-h-dvh">
-      <Sidebar locale={locale} role={role} defaultCollapsed={collapsed} />
+      <Sidebar locale={locale} role={role} userName={user.name} defaultCollapsed={collapsed} />
 
       <div className="flex min-w-0 flex-1 flex-col pb-16 md:pb-0">
         <header className="flex items-center justify-between gap-3 px-4 py-3 md:px-8 md:py-4 print:hidden">
@@ -40,7 +45,7 @@ export default async function AppLayout({
           </Link>
           <div className="flex items-center gap-2">
             <LocaleSwitcher current={locale} />
-            <TopBarCluster locale={locale} role={role} />
+            <UserMenu locale={locale} name={user.name} roleLabel={ROLE_LABEL[role]} />
           </div>
         </header>
 

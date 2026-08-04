@@ -15,28 +15,44 @@ import StatusTracker from "@/components/case/StatusTracker";
 import HandbackBadge from "@/components/ui/HandbackBadge";
 import EmptyState from "@/components/ui/EmptyState";
 import { cn } from "@/lib/cn";
+import { isPatientVisible } from "@/lib/demo";
+import { getCorridorRecord } from "@/lib/db/corridors";
+import { getSessionUser } from "@/lib/auth";
 import {
-  DEMO_DOCUMENTS,
-  DEMO_MESSAGES,
-  DEMO_SPECIALIST,
-  DEMO_USER,
-  getDemoCase,
-  isPatientVisible,
-} from "@/lib/demo";
-import { getCorridor } from "@/lib/corridors";
-import { getReferralCompliance } from "@/lib/referral";
-import { DEMO_PATIENT } from "@/lib/patient";
+  getDocuments,
+  getMessages,
+  getPatientCase,
+  getReferralCompliance,
+} from "@/lib/db/referrals";
 
 // Patient portal — read-only view of the patient's single referral. Sees the
 // full timeline including messages, honouring each message's `patientVisible`
-// flag (clinician-only notes are withheld, with a count shown).
+// flag (clinician-only notes are withheld, with a count shown). The layout has
+// already established that this is a signed-in patient; every read below is
+// scoped by the session to that patient's own referral.
 export default async function Page() {
-  const c = getDemoCase(DEMO_PATIENT.referralId);
-  const corridor = getCorridor(c.corridor);
-  const record = getReferralCompliance(c.id);
+  const user = await getSessionUser();
+  const c = await getPatientCase(user);
 
-  const visibleMessages = DEMO_MESSAGES.filter(isPatientVisible);
-  const hiddenCount = DEMO_MESSAGES.length - visibleMessages.length;
+  if (!c) {
+    return (
+      <EmptyState
+        icon={FileText}
+        title="No referral linked yet"
+        description="Your clinician hasn't linked a referral to this account. Please contact your GP's practice."
+      />
+    );
+  }
+
+  const corridor = await getCorridorRecord(c.corridor);
+  const record = await getReferralCompliance(c.id, user);
+  const messages = await getMessages(c.id, user);
+  const documents = await getDocuments(c.id, user);
+  const gpName = record?.nonSubstitution.declaredBy || "your GP";
+  const specialistName = c.specialist || "the receiving specialist";
+
+  const visibleMessages = messages.filter(isPatientVisible);
+  const hiddenCount = messages.length - visibleMessages.length;
 
   return (
     <div className="flex flex-col gap-5">
@@ -64,14 +80,14 @@ export default async function Page() {
       <Card>
         <CardTitle className="mb-2">Your care abroad</CardTitle>
         <div className="divide-y divide-line">
-          <DetailPanelRow icon={Building2} label="Hospital" value={`${c.hospital} · ${corridor.country}`} />
+          <DetailPanelRow icon={Building2} label="Hospital" value={`${c.hospital}${corridor?.country ? ` · ${corridor.country}` : ""}`} />
           <DetailPanelRow icon={Stethoscope} label="Your specialist" value={c.specialist} />
-          <DetailPanelRow icon={Globe2} label="Where your records are held" value={corridor.residency} />
+          <DetailPanelRow icon={Globe2} label="Where your records are held" value={corridor?.residency ?? c.residency} />
         </div>
         <div className="mt-3 flex items-start gap-2.5 rounded-inner bg-accent-soft/60 p-3.5 text-[13px] text-ink">
           <ShieldCheck aria-hidden className="mt-0.5 size-4 shrink-0 text-accent" />
           <span>
-            Your records are shared with clinicians in {corridor.country}. {corridor.safeguard}
+            Your records are shared with clinicians in {corridor?.country ?? "the destination country"}. {corridor?.safeguard}
           </span>
         </div>
       </Card>
@@ -93,7 +109,7 @@ export default async function Page() {
           </ul>
           <p className="mt-3 border-t border-line pt-3 text-[13px] text-ink-muted">
             You can withdraw your consent at any time — contact your referring GP,
-            {" "}{DEMO_USER.name}. Withdrawal stops further processing.
+            {" "}{gpName}. Withdrawal stops further processing.
           </p>
         </Card>
       )}
@@ -102,7 +118,7 @@ export default async function Page() {
       <Card>
         <CardTitle className="mb-2">Your documents</CardTitle>
         <ul className="flex flex-col gap-2">
-          {DEMO_DOCUMENTS.map((doc) => (
+          {documents.map((doc) => (
             <li
               key={doc.name}
               className="flex items-center gap-3 rounded-inner border border-line px-3.5 py-3"
@@ -125,7 +141,7 @@ export default async function Page() {
         <CardTitle className="mb-1">Messages about your care</CardTitle>
         <p className="mb-4 flex items-center gap-1.5 text-[13px] text-ink-secondary">
           <MessageSquare aria-hidden className="size-3.5" />
-          Between {DEMO_USER.name} (your GP) and {DEMO_SPECIALIST.name}.
+          Between {gpName} (your GP) and {specialistName}.
         </p>
         <ol className="flex flex-col gap-3">
           {visibleMessages.map((m, i) => {
@@ -140,7 +156,7 @@ export default async function Page() {
               >
                 <div className="mb-1 flex items-center justify-between gap-2">
                   <span className="text-[13px] font-medium text-ink">
-                    {fromGp ? `${DEMO_USER.name} · your GP` : `${DEMO_SPECIALIST.name} · specialist`}
+                    {fromGp ? `${gpName} · your GP` : `${specialistName} · specialist`}
                   </span>
                   <span className="text-xs text-ink-muted">{m.time}</span>
                 </div>

@@ -1,10 +1,14 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { LogOut, ShieldCheck } from "lucide-react";
 import LocaleSwitcher from "@/components/shell/LocaleSwitcher";
+import { getSessionUser } from "@/lib/auth";
+import { signOutAction } from "@/lib/authActions";
 
 // Patient portal shell — a DATA SUBJECT's read-only view of their single
 // referral. Deliberately minimal: no sidebar, no role switching, no app nav.
-// The patient is scoped to one referral (see lib/patient.ts) and can only read.
+// Access requires a signed-in PATIENT account scoped to one referral; every
+// other account type (and anonymous visitors) is sent to the login screen.
 export default async function PatientLayout({
   children,
   params,
@@ -13,6 +17,8 @@ export default async function PatientLayout({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+  const user = await getSessionUser();
+  if (!user || user.accountType !== "patient") redirect(`/${locale}/login`);
 
   return (
     <div className="flex min-h-dvh flex-col bg-page">
@@ -30,13 +36,16 @@ export default async function PatientLayout({
               Read-only
             </span>
             <LocaleSwitcher current={locale} />
-            <Link
-              href={`/${locale}/login`}
-              className="flex items-center gap-1.5 rounded-full px-3 py-2 text-[13px] font-medium text-ink-secondary transition-colors hover:bg-subtle hover:text-ink"
-            >
-              <LogOut aria-hidden className="size-4 rtl:-scale-x-100" />
-              Exit
-            </Link>
+            <form action={signOutAction}>
+              <input type="hidden" name="locale" value={locale} />
+              <button
+                type="submit"
+                className="flex items-center gap-1.5 rounded-full px-3 py-2 text-[13px] font-medium text-ink-secondary transition-colors hover:bg-subtle hover:text-ink"
+              >
+                <LogOut aria-hidden className="size-4 rtl:-scale-x-100" />
+                Sign out
+              </button>
+            </form>
           </div>
         </div>
       </header>

@@ -1,10 +1,13 @@
+import Link from "next/link";
 import { BadgeCheck, Globe2, Languages, MapPin } from "lucide-react";
 import { Card, CardTitle, SectionLabel } from "@/components/ui/Card";
 import Avatar from "@/components/ui/Avatar";
 import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
 import PersonCard from "@/components/ui/PersonCard";
-import { getDemoHospital } from "@/lib/demo";
+import { getHospital } from "@/lib/db/hospitals";
+import { getHospitalDoctors } from "@/lib/db/doctors";
+import { getCorridors } from "@/lib/db/corridors";
 
 // 9A · Hospital profile (#6) — data-driven template (design spec §3.6):
 // header + accreditation + specialty taxonomy tags + languages + named clinicians.
@@ -14,7 +17,17 @@ export default async function Page({
   params: Promise<{ locale: string; hospitalId: string }>;
 }) {
   const { locale, hospitalId } = await params;
-  const h = getDemoHospital(hospitalId);
+  const h = await getHospital(hospitalId);
+  // Admin-approved doctors (migration 002); falls back to the hospital record's
+  // own clinician list when the directory hasn't been populated yet.
+  const doctors = await getHospitalDoctors(hospitalId);
+  // Link the hospital back to its corridor page (published corridors only).
+  const corridor = (await getCorridors()).find(
+    (c) => c.published && c.primaryHospitalId === hospitalId,
+  );
+  const named = doctors.length
+    ? doctors.map((d) => ({ name: d.name, role: d.role }))
+    : h.clinicians;
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-12 md:px-8">
@@ -28,7 +41,16 @@ export default async function Page({
             {h.city}, {h.country}
             <span aria-hidden>·</span>
             <Globe2 aria-hidden className="size-4" />
-            {h.corridorLabel}
+            {corridor ? (
+              <Link
+                href={`/${locale}/corridors/${corridor.id}`}
+                className="font-medium text-accent hover:underline"
+              >
+                {corridor.label}
+              </Link>
+            ) : (
+              h.corridorLabel
+            )}
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             {h.accreditation.map((a) => (
@@ -63,7 +85,7 @@ export default async function Page({
           <Card>
             <CardTitle>Named receiving clinicians</CardTitle>
             <div className="flex flex-col gap-3">
-              {h.clinicians.map((c) => (
+              {named.map((c) => (
                 <PersonCard key={c.name} name={c.name} role={c.role} />
               ))}
             </div>

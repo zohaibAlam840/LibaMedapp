@@ -8,8 +8,9 @@ import SearchInput from "@/components/ui/SearchInput";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import StatCard from "@/components/ui/StatCard";
 import StatusChip from "@/components/ui/StatusChip";
-import { DEMO_CASES, DEMO_USER } from "@/lib/demo";
-import { getReferralCompliance, isHandbackOverdue } from "@/lib/referral";
+import { getSessionUser } from "@/lib/auth";
+import { isHandbackOverdue } from "@/lib/referral";
+import { getCases, getReferralCompliance } from "@/lib/db/referrals";
 
 // 9C · Referring dashboard (#29) — greeting + modest stat cards + filterable
 // case list (design spec §3.4/§6). ≤3 clicks from login to a new referral:
@@ -20,14 +21,17 @@ export default async function Page({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+  const user = await getSessionUser();
+  const cases = await getCases(user);
+  const records = await Promise.all(cases.map((c) => getReferralCompliance(c.ref)));
 
-  const actionNeeded = DEMO_CASES.filter(
+  const actionNeeded = cases.filter(
     (c) => c.status === "plan-received" || (c.unread ?? 0) > 0,
   );
 
   // Continuity-of-care: cases whose care summary hasn't come back in time (item 3).
-  const overdueHandbacks = DEMO_CASES.filter((c) => {
-    const r = getReferralCompliance(c.id);
+  const overdueHandbacks = cases.filter((_, i) => {
+    const r = records[i];
     return r && isHandbackOverdue(r.handback);
   });
 
@@ -37,7 +41,7 @@ export default async function Page({
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-[28px] font-semibold text-ink">
-            Welcome back, {DEMO_USER.name.replace("Dr. ", "Dr ")}
+            Welcome back, {(user?.name ?? "").replace("Dr. ", "Dr ")}
           </h1>
           <p className="mt-1 text-[15px] text-ink-secondary">
             {actionNeeded.length} of your cases need attention today.
@@ -115,7 +119,7 @@ export default async function Page({
           </CardTitle>
           <SearchInput placeholder="Search by case or patient reference" className="mb-3" />
           <div className="-mx-2 flex flex-col">
-            {DEMO_CASES.map((c) => (
+            {cases.map((c) => (
               <ListRow
                 key={c.id}
                 href={`/${locale}/referring/cases/${c.id}`}

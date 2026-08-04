@@ -7,7 +7,12 @@ import NumberedStepStrip from "@/components/ui/NumberedStepStrip";
 import { CorridorBadge, FactPill } from "@/components/ui/Badges";
 import { AccordionItem } from "@/components/ui/Accordion";
 import HeroPreview from "@/components/marketing/HeroPreview";
+import Avatar from "@/components/ui/Avatar";
 import { getDictionary } from "@/lib/dictionaries";
+import { getPublishedCorridors, corridorCode } from "@/lib/db/corridors";
+import { getFeaturedDoctors } from "@/lib/db/doctors";
+import { getHospitals } from "@/lib/db/hospitals";
+import CorridorCard from "@/components/marketing/CorridorCard";
 
 // 9A · Home (spec V2 page 1) — fully localised via the dictionary.
 const VALUE_ICONS = [Stethoscope, ShieldCheck, Lock];
@@ -21,6 +26,12 @@ export default async function Page({
   const base = `/${locale}`;
   const t = getDictionary(locale);
   const h = t.home;
+  // Both are admin-controlled: corridors via /admin/corridors (publish toggle),
+  // featured specialists via /admin/clinicians (approve + feature).
+  const corridors = await getPublishedCorridors();
+  const featured = await getFeaturedDoctors(6);
+  const hospitals = await getHospitals();
+  const hospitalName = (id?: string) => hospitals.find((x) => x.id === id)?.name;
 
   return (
     <div>
@@ -108,13 +119,50 @@ export default async function Page({
       <section className="mx-auto max-w-6xl px-4 py-20 md:px-8">
         <h2 className="mb-2 text-2xl font-semibold text-ink">{h.corridorsTitle}</h2>
         <p className="mb-8 max-w-[60ch] text-[15px] text-ink-secondary">{h.corridorsLede}</p>
-        <div className="flex flex-wrap gap-3">
-          <CorridorBadge code="IL" label="UK → Israel" />
-          <CorridorBadge code="FR" label="UK → France" residency="EEA · HDS" />
-          <CorridorBadge code="TR" label="UK → Turkey" />
-          <CorridorBadge code="CH" label="UK → Switzerland" />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {corridors.map((c) => (
+            <CorridorCard
+              key={c.id}
+              corridor={c}
+              hospitalName={hospitalName(c.primaryHospitalId)}
+              locale={locale}
+            />
+          ))}
         </div>
+        <Button variant="secondary" href={`${base}/corridors`} className="mt-6">
+          {h.corridorsCta}
+          <ArrowRight aria-hidden className="size-4 rtl:-scale-x-100" />
+        </Button>
       </section>
+
+      {/* Featured specialists — admin-curated from /admin/clinicians */}
+      {featured.length > 0 && (
+        <section className="border-y border-line bg-card">
+          <div className="mx-auto max-w-6xl px-4 py-20 md:px-8">
+            <h2 className="mb-2 text-2xl font-semibold text-ink">Specialists you can be referred to</h2>
+            <p className="mb-8 max-w-[60ch] text-[15px] text-ink-secondary">
+              Every referral goes to a named consultant at a partner hospital — never a general inbox.
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {featured.map((d) => (
+                <Card key={d.id} className="flex flex-col gap-3">
+                  <div className="flex items-center gap-3">
+                    <Avatar name={d.name} size="lg" />
+                    <div className="min-w-0">
+                      <p className="truncate text-[15px] font-semibold text-ink">{d.name}</p>
+                      <p className="truncate text-[13px] text-ink-secondary">{d.role}</p>
+                    </div>
+                  </div>
+                  {d.bio && <p className="text-[13px] leading-relaxed text-ink-secondary">{d.bio}</p>}
+                  {d.hospitalName && (
+                    <p className="mt-auto text-[13px] font-medium text-ink-secondary">{d.hospitalName}</p>
+                  )}
+                </Card>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Pledge teaser */}
       <section className="border-y border-line bg-card">

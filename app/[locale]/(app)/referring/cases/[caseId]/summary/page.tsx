@@ -3,7 +3,8 @@ import { Card, CardTitle, SectionLabel } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import DetailPanelRow from "@/components/ui/DetailPanelRow";
 import StatusChip from "@/components/ui/StatusChip";
-import { getDemoCase } from "@/lib/demo";
+import { notFound } from "next/navigation";
+import { getCase } from "@/lib/db/referrals";
 
 // 9C · Clinical summary handback view (#41) — acceptance §14.8.
 // Structured summary returned within 5 working days (Pledge commitment).
@@ -13,7 +14,8 @@ export default async function Page({
   params: Promise<{ locale: string; caseId: string }>;
 }) {
   const { caseId } = await params;
-  const c = getDemoCase(caseId);
+  const c = await getCase(caseId);
+  if (!c) notFound();
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-5">

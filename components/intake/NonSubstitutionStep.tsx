@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import { ArrowRight, Info } from "lucide-react";
 import WizardShell from "@/components/wizard/WizardShell";
 import Button from "@/components/ui/Button";
 import NoFeeNotice from "@/components/ui/NoFeeNotice";
 import { Field, Select, Textarea } from "@/components/ui/Field";
 import { NON_SUBSTITUTION_OPTIONS } from "@/lib/referral";
+import { useIntake } from "@/lib/intakeStore";
 
 const MIN_JUSTIFICATION = 10;
 
@@ -23,8 +23,11 @@ export default function NonSubstitutionStep({
   locale: string;
   nextHref: string;
 }) {
-  const [reason, setReason] = useState("");
-  const [justification, setJustification] = useState("");
+  const { data, set } = useIntake();
+  const reason = data.nsReason;
+  const justification = data.nsJustification;
+  const setReason = (v: string) => set({ nsReason: v });
+  const setJustification = (v: string) => set({ nsJustification: v });
   const valid = reason !== "" && justification.trim().length >= MIN_JUSTIFICATION;
 
   return (

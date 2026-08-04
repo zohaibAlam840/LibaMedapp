@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import {
   ArrowRight,
   Download,
@@ -14,7 +15,8 @@ import { Card, CardTitle } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import DetailPanelRow from "@/components/ui/DetailPanelRow";
 import StatusChip from "@/components/ui/StatusChip";
-import { DEMO_DOCUMENTS, getDemoCase } from "@/lib/demo";
+import CaseActionBar from "@/components/case/CaseActionBar";
+import { getCase, getDocuments } from "@/lib/db/referrals";
 
 // 9D · Receiving case detail + document access (#43) — acceptance §14.3.
 export default async function Page({
@@ -23,7 +25,9 @@ export default async function Page({
   params: Promise<{ locale: string; caseId: string }>;
 }) {
   const { locale, caseId } = await params;
-  const c = getDemoCase(caseId);
+  const c = await getCase(caseId);
+  if (!c) notFound();
+  const documents = await getDocuments(caseId);
   const base = `/${locale}/receiving/cases/${c.id}`;
 
   return (
@@ -45,6 +49,12 @@ export default async function Page({
         </div>
       </div>
 
+      {/* Next action for the receiving team */}
+      <Card>
+        <CardTitle className="mb-3">Next step</CardTitle>
+        <CaseActionBar locale={locale} side="receiving" caseRef={c.ref} status={c.status} />
+      </Card>
+
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="flex flex-col gap-4">
           <Card>
@@ -60,7 +70,7 @@ export default async function Page({
           <Card>
             <CardTitle>Documents</CardTitle>
             <ul className="flex flex-col gap-2">
-              {DEMO_DOCUMENTS.map((doc) => (
+              {documents.map((doc) => (
                 <li
                   key={doc.name}
                   className="flex items-center gap-3 rounded-inner border border-line px-3.5 py-3"
