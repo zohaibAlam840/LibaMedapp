@@ -4,6 +4,7 @@
 
 import {
   AlertTriangle,
+  BadgeCheck,
   Archive,
   Building2,
   FileCheck,
@@ -70,6 +71,7 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { href: "/admin/clinicians", label: "Clinicians", short: "Staff", icon: Stethoscope, group: "Configure" },
     { href: "/admin/corridors", label: "Corridors", short: "Corridors", icon: Globe, group: "Configure" },
     { href: "/admin/content", label: "Help & glossary", short: "Help", icon: HelpCircle, group: "Configure" },
+    { href: "/admin/verification", label: "Verification", short: "Verify", icon: BadgeCheck, group: "Govern" },
     { href: "/admin/users", label: "Users & roles", short: "Users", icon: Users, group: "Govern" },
     { href: "/admin/audit", label: "Audit log", short: "Audit", icon: ScrollText, group: "Govern" },
     { href: "/admin/consent", label: "Consent", short: "Consent", icon: FileCheck, group: "Govern" },

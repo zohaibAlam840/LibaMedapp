@@ -171,6 +171,48 @@ export async function uploadDocumentAction(
   }
 }
 
+/**
+ * Upload a file chosen during the intake wizard, BEFORE the referral exists.
+ * Bytes land in a staging folder keyed to the clinician; the returned path is
+ * held in the draft and attached to the case on submit. Without this, files
+ * picked in the wizard were recorded by name only and the bytes were lost.
+ */
+export async function uploadIntakeFileAction(
+  formData: FormData,
+): Promise<{ ok: true; name: string; size: string; path: string } | { ok: false; error: string }> {
+  const user = await getSessionUser();
+  if (!user) return { ok: false, error: "Your session has expired — please sign in again." };
+
+  const file = formData.get("file");
+  const docType = String(formData.get("docType") || "Document");
+  if (!(file instanceof File) || file.size === 0) return { ok: false, error: "Choose a file." };
+  if (file.size > 50 * 1024 * 1024) return { ok: false, error: "File is too large (50 MB max)." };
+
+  try {
+    const safeName = file.name.replace(/[^\w.\- ]+/g, "_");
+    const path = `intake/${user.profileId}/${Date.now()}-${safeName}`;
+    const { error } = await supabaseAdmin()
+      .storage.from(DOCUMENTS_BUCKET)
+      .upload(path, file, { contentType: file.type || undefined, upsert: false });
+    if (error) return { ok: false, error: `Upload failed: ${error.message}` };
+    return { ok: true, name: file.name, size: humanSize(file.size), path };
+  } catch (e) {
+    return { ok: false, error: (e as Error)?.message ?? "Upload failed." };
+  }
+}
+
+/** Discard a staged intake file the clinician removed before submitting. */
+export async function removeIntakeFileAction(path: string): Promise<void> {
+  const user = await getSessionUser();
+  // Only ever delete inside the caller's own staging folder.
+  if (!user || !path.startsWith(`intake/${user.profileId}/`)) return;
+  try {
+    await supabaseAdmin().storage.from(DOCUMENTS_BUCKET).remove([path]);
+  } catch (e) {
+    console.warn("[action] removeIntakeFile failed:", (e as Error)?.message);
+  }
+}
+
 /** Mint a short-lived signed URL to view/download a stored document. */
 export async function documentDownloadUrl(
   ref: string,
@@ -195,7 +237,7 @@ export async function documentDownloadUrl(
 export async function createReferralAction(
   payload: NewReferral & {
     locale: string;
-    documents?: { name: string; type: string; size: string }[];
+    documents?: { name: string; type: string; size: string; path?: string }[];
   },
 ): Promise<{ ok: true; ref: string } | { ok: false; error: string }> {
   const user = await getSessionUser();
@@ -211,7 +253,7 @@ export async function createReferralAction(
     });
 
     for (const doc of payload.documents ?? []) {
-      await insertDocument(ref, { name: doc.name, type: doc.type, size: doc.size });
+      await insertDocument(ref, { name: doc.name, type: doc.type, size: doc.size, storagePath: doc.path ?? null });
     }
     if (payload.documents?.length) {
       await appendAudit(ref, {

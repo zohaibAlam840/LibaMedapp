@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getSessionUser } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { appendAdminAudit, updateHospital } from "@/lib/db/write";
+import { sendEmail, siteUrl } from "@/lib/email";
 import {
   deleteCorridor,
   getCorridorRecord,
@@ -19,7 +20,14 @@ import type { Role } from "@/lib/rbac";
 
 const CLINICIAN_ROLES: Role[] = ["referring", "receiving", "coordinator", "caseManager", "admin"];
 
-export type InviteState = { error?: string; ok?: boolean; tempPassword?: string; email?: string };
+export type InviteState = {
+  error?: string;
+  ok?: boolean;
+  tempPassword?: string;
+  email?: string;
+  /** Whether the credentials email actually went out. */
+  emailed?: boolean;
+};
 
 function generatePassword(): string {
   // Human-typeable temporary password: 3 words-ish + digits + symbol.
@@ -77,8 +85,22 @@ export async function inviteUserAction(_prev: InviteState, formData: FormData): 
   }
 
   await appendAdminAudit(admin.name, "User invited", `${email} · role ${role}`);
+
+  const sent = await sendEmail({
+    to: email,
+    subject: "Your LibaMed account",
+    body: `${admin.name} has created a LibaMed account for you.
+
+Sign in with this email and the temporary password below, then change it and turn on two-factor authentication straight away.
+
+Temporary password: ${password}`,
+    action: { label: "Sign in", url: `${siteUrl()}/${locale}/login` },
+    footnote:
+      "This password is temporary. If you weren't expecting this account, please contact your administrator.",
+  });
+
   revalidatePath(`/${locale}/admin/users`);
-  return { ok: true, tempPassword: password, email };
+  return { ok: true, tempPassword: password, email, emailed: sent };
 }
 
 /* ── Doctors (named clinicians / featured specialists) ──────────────────── */
@@ -364,5 +386,79 @@ export async function updateHospitalAction(formData: FormData): Promise<void> {
     }
   } catch (e) {
     console.warn("[action] updateHospital failed:", (e as Error)?.message);
+  }
+}
+
+/**
+ * Approve or decline a registration after checking the GMC / FCA register by
+ * hand. This is the verification step: no automated lookup exists, so a person
+ * confirms the number belongs to the applicant before the account can be used.
+ */
+export async function decideRegistrationAction(formData: FormData): Promise<void> {
+  const admin = await getSessionUser();
+  if (!admin || !admin.canManageUsers) return;
+
+  const profileId = String(formData.get("profileId") || "");
+  const locale = String(formData.get("locale") || "en");
+  const decision = String(formData.get("decision") || "");
+  if (!profileId || !["verified", "declined", "pending"].includes(decision)) return;
+
+  try {
+    const sb = supabaseAdmin();
+    const { data, error } = await sb
+      .from("profiles")
+      .update({ account_status: decision })
+      .eq("id", profileId)
+      .select("name, email, account_type, gmc_number, fca_number")
+      .maybeSingle();
+    if (error) throw error;
+
+    const p = data as {
+      name: string;
+      email: string | null;
+      account_type: string;
+      gmc_number: string | null;
+      fca_number: string | null;
+    } | null;
+    if (!p) return;
+
+    const reg = p.account_type === "introducer"
+      ? p.fca_number
+        ? `FCA ${p.fca_number}`
+        : "employer-verified"
+      : p.gmc_number
+        ? `GMC ${p.gmc_number}`
+        : "no number supplied";
+
+    await appendAdminAudit(
+      admin.name,
+      decision === "verified" ? "Registration verified" : `Registration ${decision}`,
+      `${p.name} (${p.email ?? "no email"}) · ${reg}`,
+    );
+
+    // Tell the applicant either way — silence is the worst outcome for them.
+    if (p.email && decision !== "pending") {
+      if (decision === "verified") {
+        await sendEmail({
+          to: p.email,
+          subject: "Your LibaMed account is approved",
+          body: `Good news, ${p.name} — your registration has been verified and your account is ready.\n\nYou can now sign in and create referrals.`,
+          action: { label: "Sign in", url: `${siteUrl()}/${locale}/login` },
+          footnote:
+            "For your patients' security, please turn on two-factor authentication in your account settings.",
+        });
+      } else {
+        await sendEmail({
+          to: p.email,
+          subject: "About your LibaMed registration",
+          body: `Thank you for registering, ${p.name}.\n\nWe weren't able to verify your registration details against the public register, so we can't activate the account at this time.\n\nIf you think this is a mistake — for example the number was mistyped — please reply to this email and we'll take another look.`,
+        });
+      }
+    }
+
+    revalidatePath(`/${locale}/admin/verification`);
+    revalidatePath(`/${locale}/admin/users`);
+  } catch (e) {
+    console.warn("[action] decideRegistration failed:", (e as Error)?.message);
   }
 }

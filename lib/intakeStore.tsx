@@ -27,7 +27,7 @@ export interface IntakeData {
   nsReason: string;
   nsJustification: string;
   // Documents (staged client-side; real bytes upload on submit — see action)
-  documents: { name: string; type: string; size: string }[];
+  documents: { name: string; type: string; size: string; path?: string }[];
   // Consent — ids of the items the patient agreed to
   consentAgreed: string[];
 }

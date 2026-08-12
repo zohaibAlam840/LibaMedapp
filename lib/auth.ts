@@ -87,7 +87,11 @@ export async function getSessionUser(): Promise<SessionProfile | null> {
 /** Where a signed-in account should land after login, by account type/role. */
 export function landingPath(locale: string, p: SessionProfile): string {
   if (p.accountType === "patient") return `/${locale}/portal`;
-  if (p.accountType === "introducer") return `/${locale}/referring`; // introducer app is Phase E+
+  // Introducers have no workspace yet, and the (app) area rejects non-clinicians
+  // — sending them to /referring bounced them to /login, which sent them back
+  // here, looping forever. Land them on the account page that explains where
+  // their registration stands.
+  if (p.accountType === "introducer") return `/${locale}/account-pending`;
   const home: Record<Role, string> = {
     public: "/",
     referring: "/referring",
@@ -97,4 +101,22 @@ export function landingPath(locale: string, p: SessionProfile): string {
     admin: "/admin",
   };
   return `/${locale}${home[p.role] ?? "/"}`;
+}
+
+/**
+ * True when this session has a verified second factor that has NOT yet been
+ * satisfied for this sign-in. Supabase exposes this as assurance levels:
+ * `nextLevel` becomes "aal2" once a factor exists, while `currentLevel` stays
+ * "aal1" until the code is entered. Used to gate the app behind /mfa/challenge.
+ */
+export async function needsMfaChallenge(): Promise<boolean> {
+  try {
+    const supabase = await supabaseServer();
+    const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (error || !data) return false;
+    return data.nextLevel === "aal2" && data.currentLevel !== "aal2";
+  } catch {
+    // Never lock a clinician out because the check itself failed.
+    return false;
+  }
 }

@@ -106,6 +106,11 @@ export interface NewReferral {
   nsReason?: string | null;
   nsJustification?: string | null;
   nsDeclaredBy?: string | null;
+  clinicalSummary?: string | null;
+  clinicalHistory?: string | null;
+  urgency?: string | null;
+  patientDob?: string | null;
+  patientSex?: string | null;
   consent?: {
     version: string;
     country: string;
@@ -135,6 +140,11 @@ export async function insertReferral(r: NewReferral): Promise<string> {
       ns_justification: r.nsJustification ?? null,
       ns_declared_by: r.nsDeclaredBy ?? null,
       ns_declared_at: r.nsReason ? now : null,
+      clinical_summary: r.clinicalSummary ?? null,
+      clinical_history: r.clinicalHistory ?? null,
+      urgency: r.urgency ?? null,
+      patient_dob: r.patientDob || null,
+      patient_sex: r.patientSex ?? null,
     })
     .select("id")
     .single();

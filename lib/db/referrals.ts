@@ -21,8 +21,24 @@ function configured(): boolean {
   return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && s && !s.startsWith("REPLACE_WITH"));
 }
 
-const CASE_COLS =
+// Columns that exist in every deployment.
+const BASE_CASE_COLS =
   "id, ref, patient_ref, corridor_id, specialist, specialty, status, unread, updated_at, corridors(label, residency), hospitals(name), referrer:referring_user_id(name)";
+
+// Clinical detail added by migration 003. Selected when present; if the
+// migration hasn't been applied yet we fall back to BASE_CASE_COLS rather than
+// returning an empty list, so an un-migrated database degrades instead of
+// looking like a clinician has no cases.
+const CLINICAL_CASE_COLS =
+  "clinical_summary, clinical_history, urgency, patient_dob, patient_sex";
+
+const CASE_COLS = `${BASE_CASE_COLS}, ${CLINICAL_CASE_COLS}`;
+
+/** True when the error is "column does not exist" (migration 003 not applied). */
+function isMissingColumn(e: unknown): boolean {
+  const msg = (e as { message?: string })?.message ?? "";
+  return /column .* does not exist|could not find the .* column/i.test(msg);
+}
 
 interface CaseRow {
   id: string;
@@ -34,6 +50,11 @@ interface CaseRow {
   status: CaseStatus;
   unread: number | null;
   updated_at: string;
+  clinical_summary?: string | null;
+  clinical_history?: string | null;
+  urgency?: string | null;
+  patient_dob?: string | null;
+  patient_sex?: string | null;
   corridors: { label: string; residency: string } | null;
   hospitals: { name: string } | null;
   referrer: { name: string } | null;
@@ -55,6 +76,11 @@ function mapCase(r: CaseRow): DemoCase {
     updated: relativeTime(r.updated_at),
     updatedIso: r.updated_at,
     unread: r.unread ?? undefined,
+    clinicalSummary: r.clinical_summary ?? "",
+    clinicalHistory: r.clinical_history ?? "",
+    urgency: r.urgency ?? "",
+    patientDob: r.patient_dob ? formatDate(r.patient_dob) : "",
+    patientSex: r.patient_sex ?? "",
   };
 }
 
@@ -68,14 +94,26 @@ export async function getCases(user?: SessionProfile | null): Promise<DemoCase[]
   if (!configured()) return [];
   const scope = caseScopeFor(await resolveUser(user));
   if (scope.kind === "none") return [];
-  try {
-    const base = supabaseAdmin().from("referrals").select(CASE_COLS);
+  const run = async (cols: string) => {
+    const base = supabaseAdmin().from("referrals").select(cols);
     const scoped = applyCaseScope(base, scope);
-    if (!scoped) return [];
+    if (!scoped) return null;
     const { data, error } = await scoped.order("updated_at", { ascending: false });
     if (error) throw error;
     return ((data as unknown as CaseRow[]) ?? []).map(mapCase);
+  };
+  try {
+    return (await run(CASE_COLS)) ?? [];
   } catch (e) {
+    if (isMissingColumn(e)) {
+      console.warn("[db] getCases: migration 003 not applied — clinical detail omitted");
+      try {
+        return (await run(BASE_CASE_COLS)) ?? [];
+      } catch (e2) {
+        console.warn("[db] getCases fallback failed:", (e2 as Error)?.message);
+        return [];
+      }
+    }
     console.warn("[db] getCases failed:", (e as Error)?.message);
     return [];
   }
@@ -92,14 +130,24 @@ export async function getCase(
   if (!configured()) return null;
   const scope = caseScopeFor(await resolveUser(user));
   if (scope.kind === "none") return null;
-  try {
-    const base = supabaseAdmin().from("referrals").select(CASE_COLS).eq("ref", ref);
+  const run = async (cols: string) => {
+    const base = supabaseAdmin().from("referrals").select(cols).eq("ref", ref);
     const scoped = applyCaseScope(base, scope);
     if (!scoped) return null;
     const { data, error } = await scoped.maybeSingle();
     if (error) throw error;
     return data ? mapCase(data as unknown as CaseRow) : null;
+  };
+  try {
+    return await run(CASE_COLS);
   } catch (e) {
+    if (isMissingColumn(e)) {
+      try {
+        return await run(BASE_CASE_COLS);
+      } catch {
+        return null;
+      }
+    }
     console.warn("[db] getCase failed:", (e as Error)?.message);
     return null;
   }
@@ -117,16 +165,25 @@ export async function getThreads(user?: SessionProfile | null): Promise<CaseThre
   if (!configured()) return [];
   const scope = caseScopeFor(await resolveUser(user));
   if (scope.kind === "none") return [];
-  try {
+  const run = async (cols: string) => {
     const base = supabaseAdmin()
       .from("referrals")
-      .select(`${CASE_COLS}, messages(body, read, created_at)`);
+      .select(`${cols}, messages(body, read, created_at)`);
     const scoped = applyCaseScope(base, scope);
-    if (!scoped) return [];
+    if (!scoped) return null;
     const { data, error } = await scoped.order("updated_at", { ascending: false });
     if (error) throw error;
-
-    const rows = (data as unknown as (CaseRow & { messages: MessageRow[] })[]) ?? [];
+    return (data as unknown as (CaseRow & { messages: MessageRow[] })[]) ?? [];
+  };
+  try {
+    let rows: (CaseRow & { messages: MessageRow[] })[] | null;
+    try {
+      rows = await run(CASE_COLS);
+    } catch (e) {
+      if (!isMissingColumn(e)) throw e;
+      rows = await run(BASE_CASE_COLS);
+    }
+    if (!rows) return [];
     return rows
       .filter((r) => (r.messages ?? []).length > 0)
       .map((r) => {
@@ -153,15 +210,25 @@ export async function getPatientCase(user?: SessionProfile | null): Promise<Demo
   if (!configured()) return null;
   const u = await resolveUser(user);
   if (!u || u.accountType !== "patient" || !u.patientReferralId) return null;
-  try {
+  const run = async (cols: string) => {
     const { data, error } = await supabaseAdmin()
       .from("referrals")
-      .select(CASE_COLS)
-      .eq("id", u.patientReferralId)
+      .select(cols)
+      .eq("id", u.patientReferralId!)
       .maybeSingle();
     if (error) throw error;
     return data ? mapCase(data as unknown as CaseRow) : null;
+  };
+  try {
+    return await run(CASE_COLS);
   } catch (e) {
+    if (isMissingColumn(e)) {
+      try {
+        return await run(BASE_CASE_COLS);
+      } catch {
+        return null;
+      }
+    }
     console.warn("[db] getPatientCase failed:", (e as Error)?.message);
     return null;
   }

@@ -1,10 +1,9 @@
-import { Card, CardTitle } from "@/components/ui/Card";
-import Button from "@/components/ui/Button";
-import { Field, Input, Select, Textarea } from "@/components/ui/Field";
 import { notFound } from "next/navigation";
+import TreatmentPlanForm from "@/components/case/TreatmentPlanForm";
 import { getCase } from "@/lib/db/referrals";
+import { getTreatmentPlan } from "@/lib/db/clinical";
 
-// 9D · Treatment plan response template (#45) — acceptance §14.5.
+// 9D · Treatment plan response (#45) — acceptance §14.5.
 // Structured response: plan + itemised cost estimate + timeline (C2C §8.2).
 export default async function Page({
   params,
@@ -14,6 +13,7 @@ export default async function Page({
   const { locale, caseId } = await params;
   const c = await getCase(caseId);
   if (!c) notFound();
+  const plan = await getTreatmentPlan(c.ref);
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-5">
@@ -25,50 +25,7 @@ export default async function Page({
           itemised — no hidden fees is a Pledge commitment.
         </p>
       </div>
-
-      <Card>
-        <CardTitle>Plan</CardTitle>
-        <div className="flex flex-col gap-4">
-          <Field label="Proposed treatment" htmlFor="plan" hint="What you would tell the referring clinician directly.">
-            <Textarea id="plan" rows={6} />
-          </Field>
-          <Field label="Expected inpatient stay" htmlFor="stay">
-            <Select id="stay" defaultValue="">
-              <option value="" disabled>
-                Select…
-              </option>
-              <option>Day case</option>
-              <option>1–3 days</option>
-              <option>4–7 days</option>
-              <option>Over a week</option>
-            </Select>
-          </Field>
-        </div>
-      </Card>
-
-      <Card>
-        <CardTitle>Costs &amp; timeline</CardTitle>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Estimated total cost" htmlFor="cost" hint="Attach the itemised breakdown below.">
-            <Input id="cost" inputMode="decimal" placeholder="£" />
-          </Field>
-          <Field label="Earliest start" htmlFor="start">
-            <Input id="start" type="date" />
-          </Field>
-        </div>
-        <div className="mt-4">
-          <Button variant="secondary" size="sm">
-            Attach itemised estimate (PDF)
-          </Button>
-        </div>
-      </Card>
-
-      <div className="flex justify-end gap-3">
-        <Button variant="secondary" href={`/${locale}/receiving/cases/${c.id}`}>
-          Save draft
-        </Button>
-        <Button>Send to referrer</Button>
-      </div>
+      <TreatmentPlanForm locale={locale} caseRef={c.ref} plan={plan} />
     </div>
   );
 }

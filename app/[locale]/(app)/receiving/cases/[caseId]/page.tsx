@@ -16,6 +16,8 @@ import Button from "@/components/ui/Button";
 import DetailPanelRow from "@/components/ui/DetailPanelRow";
 import StatusChip from "@/components/ui/StatusChip";
 import CaseActionBar from "@/components/case/CaseActionBar";
+import InfoRequestList from "@/components/case/InfoRequestList";
+import { getInfoRequests } from "@/lib/db/clinical";
 import { getCase, getDocuments } from "@/lib/db/referrals";
 
 // 9D · Receiving case detail + document access (#43) — acceptance §14.3.
@@ -28,6 +30,7 @@ export default async function Page({
   const c = await getCase(caseId);
   if (!c) notFound();
   const documents = await getDocuments(caseId);
+  const infoRequests = await getInfoRequests(c.ref);
   const base = `/${locale}/receiving/cases/${c.id}`;
 
   return (
@@ -55,16 +58,60 @@ export default async function Page({
         <CaseActionBar locale={locale} side="receiving" caseRef={c.ref} status={c.status} />
       </Card>
 
+      <InfoRequestList
+        locale={locale}
+        caseRef={c.ref}
+        requests={infoRequests}
+        canAnswer={false}
+      />
+
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="flex flex-col gap-4">
           <Card>
             <CardTitle>Clinical summary from referrer</CardTitle>
-            <p className="text-[15px] leading-relaxed text-ink">
-              58-year-old with stage II NSCLC of the right upper lobe, confirmed
-              on biopsy in March. Currently well, performance status 1. Referred
-              for surgical opinion and treatment given local waiting times.
-              Urgency: routine, weeks matter.
-            </p>
+            {c.clinicalSummary ? (
+              <>
+                <p className="whitespace-pre-line text-[15px] leading-relaxed text-ink">
+                  {c.clinicalSummary}
+                </p>
+                {c.clinicalHistory && (
+                  <>
+                    <p className="mt-4 text-[13px] font-medium text-ink-secondary">
+                      Current treatment and relevant history
+                    </p>
+                    <p className="mt-1 whitespace-pre-line text-[15px] leading-relaxed text-ink">
+                      {c.clinicalHistory}
+                    </p>
+                  </>
+                )}
+                <div className="mt-4 flex flex-wrap gap-2 border-t border-line pt-3 text-[13px] text-ink-secondary">
+                  {c.urgency && (
+                    <span
+                      className={
+                        c.urgency === "urgent"
+                          ? "rounded-full bg-danger-bg px-2.5 py-0.5 font-medium text-danger-text"
+                          : c.urgency === "soon"
+                            ? "rounded-full bg-warning-bg px-2.5 py-0.5 font-medium text-warning-text"
+                            : "rounded-full bg-subtle px-2.5 py-0.5 font-medium"
+                      }
+                    >
+                      {c.urgency === "urgent"
+                        ? "Urgent — days matter"
+                        : c.urgency === "soon"
+                          ? "Soon — weeks matter"
+                          : "Routine"}
+                    </span>
+                  )}
+                  {c.patientDob && <span>DOB {c.patientDob}</span>}
+                  {c.patientSex && <span>· {c.patientSex}</span>}
+                  {c.referrer && <span>· Referred by {c.referrer}</span>}
+                </div>
+              </>
+            ) : (
+              <p className="rounded-inner bg-subtle px-3.5 py-3 text-[13px] text-ink-muted">
+                No clinical summary was recorded on this referral.
+              </p>
+            )}
           </Card>
 
           <Card>

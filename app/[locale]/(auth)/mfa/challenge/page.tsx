@@ -1,44 +1,28 @@
-import Link from "next/link";
-import Button from "@/components/ui/Button";
-import { Field, Input } from "@/components/ui/Field";
+import { Card, CardTitle } from "@/components/ui/Card";
+import MfaChallenge from "@/components/auth/MfaChallenge";
 
-// 9B · MFA challenge — second factor at every login (§7.4).
+// 9B · Second-factor prompt at sign-in.
 export default async function Page({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<{ next?: string }>;
 }) {
   const { locale } = await params;
+  const { next } = await searchParams;
+  // Only ever redirect to a path inside this app.
+  const target = next && next.startsWith("/") ? next : `/${locale}`;
 
   return (
-    <div className="flex flex-col gap-5">
-      <div>
-        <h1 className="text-2xl font-semibold text-ink">Enter your code</h1>
-        <p className="mt-1 text-sm text-ink-secondary">
-          Open your authenticator app and enter the current 6-digit code.
+    <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center px-4 py-10">
+      <Card className="p-7">
+        <CardTitle className="mb-1">Two-step verification</CardTitle>
+        <p className="mb-5 text-[15px] text-ink-secondary">
+          One more step to protect patient data.
         </p>
-      </div>
-
-      <Field label="6-digit code" htmlFor="totp">
-        <Input
-          id="totp"
-          inputMode="numeric"
-          maxLength={6}
-          placeholder="000000"
-          className="text-center text-xl tracking-[0.5em]"
-        />
-      </Field>
-
-      <Button href={`/${locale}/referring`} className="w-full">
-        Verify
-      </Button>
-
-      <p className="text-center text-sm text-ink-secondary">
-        Lost your device?{" "}
-        <Link href={`/${locale}/contact`} className="font-medium text-accent hover:underline">
-          Contact support
-        </Link>
-      </p>
+        <MfaChallenge locale={locale} next={target} />
+      </Card>
     </div>
   );
 }

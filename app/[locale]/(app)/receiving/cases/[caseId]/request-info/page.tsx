@@ -1,9 +1,5 @@
-import { Card, CardTitle } from "@/components/ui/Card";
-import Button from "@/components/ui/Button";
-import Chip from "@/components/ui/Chip";
-import { Field, Textarea } from "@/components/ui/Field";
-import { SectionLabel } from "@/components/ui/Card";
 import { notFound } from "next/navigation";
+import RequestInfoForm from "@/components/case/RequestInfoForm";
 import { getCase } from "@/lib/db/referrals";
 
 // 9D · Request additional information (#46) — without leaving the platform.
@@ -24,33 +20,10 @@ export default async function Page({
           Request more information
         </h1>
         <p className="mt-1 text-[15px] text-ink-secondary">
-          Goes straight to the referring clinician&rsquo;s case thread — no email.
+          Goes straight to the referring clinician&rsquo;s case — no email needed.
         </p>
       </div>
-
-      <Card>
-        <CardTitle>What do you need?</CardTitle>
-        <SectionLabel className="mb-2">Commonly requested</SectionLabel>
-        <div className="mb-5 flex flex-wrap gap-2">
-          {["Histopathology report", "Recent bloods", "Prior imaging", "Medication list", "Comorbidity history"].map(
-            (t) => (
-              <Chip key={t} name="request-items" value={t} multiple>
-                {t}
-              </Chip>
-            ),
-          )}
-        </div>
-        <Field label="Details" htmlFor="details" hint="Be specific — the referrer sees this exactly as written.">
-          <Textarea id="details" rows={5} />
-        </Field>
-      </Card>
-
-      <div className="flex justify-end gap-3">
-        <Button variant="secondary" href={`/${locale}/receiving/cases/${c.id}`}>
-          Cancel
-        </Button>
-        <Button>Send request</Button>
-      </div>
+      <RequestInfoForm locale={locale} caseRef={c.ref} />
     </div>
   );
 }

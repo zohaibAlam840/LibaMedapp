@@ -34,6 +34,12 @@ export interface DemoCase {
   status: CaseStatus;
   updated: string;
   unread?: number;
+  /** Clinical detail captured at intake (empty on legacy/demo rows). */
+  clinicalSummary?: string;
+  clinicalHistory?: string;
+  urgency?: string;
+  patientDob?: string;
+  patientSex?: string;
 }
 
 export const DEMO_CASES: DemoCase[] = [

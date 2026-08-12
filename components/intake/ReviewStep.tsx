@@ -75,6 +75,11 @@ export default function ReviewStep({
         treatmentScope: data.specialty,
         nsReason: data.nsReason || null,
         nsJustification: data.nsJustification || null,
+        clinicalSummary: data.summary || null,
+        clinicalHistory: data.history || null,
+        urgency: data.urgency,
+        patientDob: data.dob || null,
+        patientSex: data.sex || null,
         documents: data.documents,
         consent: {
           version: CONSENT_VERSION,

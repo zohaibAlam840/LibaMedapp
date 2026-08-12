@@ -1,11 +1,12 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useTransition } from "react";
 import { CloudUpload, FileText, X } from "lucide-react";
 import WizardShell from "@/components/wizard/WizardShell";
 import IconButton from "@/components/ui/IconButton";
 import { SectionLabel } from "@/components/ui/Card";
 import { useIntake } from "@/lib/intakeStore";
+import { removeIntakeFileAction, uploadIntakeFileAction } from "@/lib/referralActions";
 import { cn } from "@/lib/cn";
 
 const DOC_TYPES = ["Referral letter", "Lab results", "Imaging — DICOM", "Histopathology", "Other"];
@@ -23,21 +24,38 @@ function humanSize(bytes: number): string {
 export default function DocumentsStep({ locale }: { locale: string }) {
   const { data, set } = useIntake();
   const [docType, setDocType] = useState(DOC_TYPES[0]);
+  const [error, setError] = useState<string | null>(null);
+  const [uploading, startTransition] = useTransition();
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Files upload to region storage as soon as they're chosen — the draft only
+  // holds the returned path, so a refresh never loses the bytes.
   function onFiles(files: FileList | null) {
     if (!files?.length) return;
-    const added = Array.from(files).map((f) => ({
-      name: f.name,
-      type: docType,
-      size: humanSize(f.size),
-    }));
-    set({ documents: [...data.documents, ...added] });
-    if (inputRef.current) inputRef.current.value = "";
+    setError(null);
+    const chosen = Array.from(files);
+    startTransition(async () => {
+      const uploaded: typeof data.documents = [];
+      for (const file of chosen) {
+        const fd = new FormData();
+        fd.set("file", file);
+        fd.set("docType", docType);
+        const res = await uploadIntakeFileAction(fd);
+        if (res.ok) {
+          uploaded.push({ name: res.name, type: docType, size: res.size, path: res.path });
+        } else {
+          setError(res.error);
+          break;
+        }
+      }
+      if (uploaded.length) set({ documents: [...data.documents, ...uploaded] });
+      if (inputRef.current) inputRef.current.value = "";
+    });
   }
 
-  function remove(name: string) {
-    set({ documents: data.documents.filter((d) => d.name !== name) });
+  function remove(doc: { name: string; path?: string }) {
+    set({ documents: data.documents.filter((d) => d.name !== doc.name) });
+    if (doc.path) void removeIntakeFileAction(doc.path);
   }
 
   return (
@@ -57,12 +75,15 @@ export default function DocumentsStep({ locale }: { locale: string }) {
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
+          disabled={uploading}
           className="flex min-h-36 w-full flex-col items-center justify-center gap-2 rounded-card border-2 border-dashed border-line-strong bg-subtle/60 p-6 text-center transition-colors hover:border-accent hover:bg-accent-soft/40"
         >
           <span className="flex size-11 items-center justify-center rounded-full bg-accent-soft text-accent">
             <CloudUpload aria-hidden className="size-5" />
           </span>
-          <span className="text-[15px] font-medium text-ink">Drag files here or browse</span>
+          <span className="text-[15px] font-medium text-ink">
+            {uploading ? "Uploading…" : "Drag files here or browse"}
+          </span>
           <span className="text-[13px] text-ink-secondary">
             PDF, DOCX, JPG, DICOM — encrypted in transit and at rest
           </span>
@@ -93,6 +114,12 @@ export default function DocumentsStep({ locale }: { locale: string }) {
           </div>
         </div>
 
+        {error && (
+          <p className="rounded-inner bg-danger-bg px-3.5 py-2.5 text-[13px] text-danger-text">
+            {error}
+          </p>
+        )}
+
         <div>
           <SectionLabel className="mb-2">Attached to this case</SectionLabel>
           {data.documents.length === 0 ? (
@@ -115,7 +142,7 @@ export default function DocumentsStep({ locale }: { locale: string }) {
                       {doc.type} · {doc.size}
                     </span>
                   </span>
-                  <IconButton aria-label={`Remove ${doc.name}`} size="sm" onClick={() => remove(doc.name)}>
+                  <IconButton aria-label={`Remove ${doc.name}`} size="sm" onClick={() => remove(doc)}>
                     <X aria-hidden className="size-4" />
                   </IconButton>
                 </li>

@@ -1,13 +1,13 @@
-import { CalendarCheck2, Download, FileText, Pill, Stethoscope } from "lucide-react";
-import { Card, CardTitle, SectionLabel } from "@/components/ui/Card";
-import Button from "@/components/ui/Button";
-import DetailPanelRow from "@/components/ui/DetailPanelRow";
-import StatusChip from "@/components/ui/StatusChip";
 import { notFound } from "next/navigation";
+import { Hourglass } from "lucide-react";
+import { Card, CardTitle } from "@/components/ui/Card";
+import EmptyState from "@/components/ui/EmptyState";
+import PrintButton from "@/components/ui/PrintButton";
 import { getCase } from "@/lib/db/referrals";
+import { getClinicalSummary } from "@/lib/db/clinical";
 
-// 9C · Clinical summary handback view (#41) — acceptance §14.8.
-// Structured summary returned within 5 working days (Pledge commitment).
+// The 5-working-day handback as the referring clinician receives it. Printable,
+// because it goes into the patient's UK record.
 export default async function Page({
   params,
 }: {
@@ -16,55 +16,56 @@ export default async function Page({
   const { caseId } = await params;
   const c = await getCase(caseId);
   if (!c) notFound();
+  const s = await getClinicalSummary(c.ref);
+
+  const sections = s
+    ? [
+        { label: "Treatment performed", body: s.treatmentPerformed },
+        { label: "Follow-up required", body: s.followUp },
+        { label: "Medication changes", body: s.medicationChanges },
+        { label: "Fitness / restrictions", body: s.restrictions },
+      ].filter((x) => x.body)
+    : [];
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-[13px] font-medium text-ink-secondary">Case {c.ref}</p>
+          <p className="text-[13px] font-medium text-ink-secondary">Case {c.ref} · patient {c.patientRef}</p>
           <h1 className="mt-0.5 text-[28px] font-semibold text-ink">Clinical summary</h1>
+          {s?.submittedAt && (
+            <p className="mt-1 text-[15px] text-ink-secondary">
+              Returned {s.submittedAt} by {c.specialist || "the receiving specialist"}, {c.hospital}.
+            </p>
+          )}
         </div>
-        <StatusChip status="summary-returned" />
+        {s?.status === "sent" && <PrintButton />}
       </div>
 
-      <Card>
-        <CardTitle className="mb-2">Continuity of care handback</CardTitle>
-        <p className="mb-4 text-[13px] text-ink-secondary">
-          Returned by {c.specialist}, {c.hospital} · 2 working days after
-          treatment completion
-        </p>
-
-        <div className="flex flex-col gap-5">
-          <div>
-            <SectionLabel className="mb-1.5">Treatment performed</SectionLabel>
-            <p className="text-[15px] leading-relaxed text-ink">
-              Robotic-assisted right upper lobectomy performed without
-              complication. Final histology confirmed clear margins; two of
-              twelve sampled nodes positive, consistent with pre-operative
-              staging.
-            </p>
+      {!s || s.status !== "sent" ? (
+        <Card>
+          <EmptyState
+            icon={Hourglass}
+            title="Summary not returned yet"
+            description="The receiving team returns a structured clinical summary within 5 working days of treatment completion. It will appear here."
+          />
+        </Card>
+      ) : (
+        <Card>
+          <div className="flex flex-col gap-5">
+            {sections.map((x) => (
+              <div key={x.label}>
+                <CardTitle className="mb-1">{x.label}</CardTitle>
+                <p className="whitespace-pre-line text-[15px] leading-relaxed text-ink">{x.body}</p>
+              </div>
+            ))}
           </div>
-
-          <div className="divide-y divide-line rounded-card border border-line px-4">
-            <DetailPanelRow icon={Stethoscope} label="Follow-up required" value="Oncology review in 2 weeks; CT at 3 months" />
-            <DetailPanelRow icon={Pill} label="Medication changes" value="Adjuvant regimen commenced — full schedule attached" />
-            <DetailPanelRow icon={CalendarCheck2} label="Fitness" value="No flying for 4 weeks; wound check at GP in 10 days" />
-          </div>
-
-          <div className="flex items-center gap-3 rounded-inner border border-line px-3.5 py-3">
-            <span className="flex size-9 items-center justify-center rounded-full bg-accent-soft text-accent">
-              <FileText aria-hidden className="size-4" />
-            </span>
-            <span className="flex-1 text-sm font-medium text-ink">
-              Structured discharge summary.pdf
-            </span>
-            <Button variant="ghost" size="sm">
-              <Download aria-hidden className="size-4" />
-              Download
-            </Button>
-          </div>
-        </div>
-      </Card>
+          <p className="mt-5 border-t border-line pt-3 text-xs text-ink-muted">
+            This handback is recorded in the case audit trail and forms part of
+            the patient&rsquo;s continuity of care.
+          </p>
+        </Card>
+      )}
     </div>
   );
 }

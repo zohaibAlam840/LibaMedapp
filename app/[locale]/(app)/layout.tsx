@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { Sidebar, BottomTabs } from "@/components/shell/AppNav";
 import UserMenu from "@/components/auth/UserMenu";
 import LocaleSwitcher from "@/components/shell/LocaleSwitcher";
-import { getSessionUser } from "@/lib/auth";
+import { getSessionUser, needsMfaChallenge } from "@/lib/auth";
 import { ROLE_LABEL } from "@/lib/rbac";
 import { DEMO_ROLE_SIDEBAR_COOKIE } from "@/lib/demoRole";
 
@@ -25,6 +25,15 @@ export default async function AppLayout({
   const user = await getSessionUser();
   if (!user || user.accountType !== "clinician") {
     redirect(`/${locale}/login`);
+  }
+  // A registration an admin hasn't verified yet cannot reach patient data.
+  if (user.accountStatus !== "verified") {
+    redirect(`/${locale}/account-pending?status=${user.accountStatus}`);
+  }
+  // A verified second factor that hasn't been satisfied on this sign-in blocks
+  // the app until the code is entered.
+  if (await needsMfaChallenge()) {
+    redirect(`/${locale}/mfa/challenge`);
   }
 
   const role = user.role;

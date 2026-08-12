@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { BadgeCheck, ChevronRight, KeyRound, MonitorSmartphone, Bell } from "lucide-react";
+import { BadgeCheck, ChevronRight, KeyRound, MonitorSmartphone, Bell, ShieldCheck } from "lucide-react";
 import { Card, CardTitle } from "@/components/ui/Card";
 import Avatar from "@/components/ui/Avatar";
 import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
-import { Field, Input, Select } from "@/components/ui/Field";
+import { Field, Select } from "@/components/ui/Field";
+import ProfileForm from "@/components/auth/ProfileForm";
 import { getSessionUser } from "@/lib/auth";
 import { ROLE_LABEL } from "@/lib/rbac";
 import { LOCALES, LOCALE_LABELS } from "@/lib/i18n";
@@ -40,16 +41,17 @@ export default async function Page({
 
         <Card>
           <CardTitle>Details</CardTitle>
+          <ProfileForm
+            locale={locale}
+            name={name}
+            email={user?.email ?? ""}
+            roleLabel={user ? ROLE_LABEL[user.role] : ""}
+          />
+        </Card>
+
+        <Card>
+          <CardTitle>Preferences</CardTitle>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Full name" htmlFor="name">
-              <Input id="name" defaultValue={name} />
-            </Field>
-            <Field label="Work email" htmlFor="email">
-              <Input id="email" type="email" defaultValue={user?.email ?? ""} />
-            </Field>
-            <Field label="Practice / trust" htmlFor="org">
-              <Input id="org" defaultValue="" />
-            </Field>
             <Field label="Language" htmlFor="lang">
               <Select id="lang" defaultValue={locale}>
                 {LOCALES.map((l) => (
@@ -60,9 +62,10 @@ export default async function Page({
               </Select>
             </Field>
           </div>
-          <div className="mt-5 flex justify-end">
-            <Button size="sm">Save changes</Button>
-          </div>
+          <p className="mt-3 text-[13px] text-ink-muted">
+            Language follows the address bar — use the language button in the top
+            bar to switch. Your choice is remembered for this browser.
+          </p>
         </Card>
 
         <Card className="p-2">
@@ -80,10 +83,16 @@ export default async function Page({
               sub: "Email alerts for case activity",
             },
             {
+              href: `/${locale}/mfa/enrolment`,
+              icon: ShieldCheck,
+              title: "Two-factor authentication",
+              sub: "Protect your account with an authenticator app",
+            },
+            {
               href: `/${locale}/reset-password`,
               icon: KeyRound,
-              title: "Password & MFA",
-              sub: "Change password or re-enrol two-factor",
+              title: "Password",
+              sub: "Change your sign-in password",
             },
           ].map(({ href, icon: Icon, title, sub }) => (
             <Link

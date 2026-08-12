@@ -21,6 +21,10 @@ import NoFeeNotice from "@/components/ui/NoFeeNotice";
 import StatusTracker from "@/components/case/StatusTracker";
 import CaseActionBar from "@/components/case/CaseActionBar";
 import DocumentUpload from "@/components/case/DocumentUpload";
+import InfoRequestList from "@/components/case/InfoRequestList";
+import InvitePatientCard from "@/components/case/InvitePatientCard";
+import { getPatientInvites } from "@/lib/db/patientInvites";
+import { getInfoRequests } from "@/lib/db/clinical";
 import { getCorridorRecord } from "@/lib/db/corridors";
 import { NON_SUBSTITUTION_LABELS } from "@/lib/referral";
 import { getCase, getDocuments, getReferralCompliance } from "@/lib/db/referrals";
@@ -39,6 +43,8 @@ export default async function Page({
   const record = await getReferralCompliance(caseId);
   const documents = await getDocuments(caseId);
   const corridor = await getCorridorRecord(c.corridor);
+  const infoRequests = await getInfoRequests(c.ref);
+  const patientInvites = await getPatientInvites(c.ref);
 
   return (
     <div className="flex flex-col gap-5">
@@ -69,6 +75,13 @@ export default async function Page({
           <CaseActionBar locale={locale} side="referring" caseRef={c.ref} status={c.status} />
         </div>
       </Card>
+
+      <InfoRequestList
+        locale={locale}
+        caseRef={c.ref}
+        requests={infoRequests}
+        canAnswer
+      />
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         {/* Documents */}
@@ -147,6 +160,8 @@ export default async function Page({
               <NoFeeNotice compact className="mt-3" />
             </Card>
           )}
+
+          <InvitePatientCard locale={locale} caseRef={c.ref} invites={patientInvites} />
 
           <Card className="p-2">
             {[

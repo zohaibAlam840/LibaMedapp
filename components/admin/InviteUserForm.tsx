@@ -58,9 +58,19 @@ export default function InviteUserForm({
           <ShieldCheck aria-hidden className="size-5 text-success-text" /> Account created
         </CardTitle>
         <p className="text-sm text-ink-secondary">
-          Share these credentials with <b className="text-ink">{state.email}</b> over a
-          secure channel. The temporary password is shown once — they should change it
-          and enrol MFA on first sign-in.
+          {state.emailed ? (
+            <>
+              Credentials were emailed to <b className="text-ink">{state.email}</b>. The
+              password is shown here once too, in case they don&rsquo;t receive it.
+            </>
+          ) : (
+            <>
+              <b className="text-ink">No email was sent</b> — pass these credentials to{" "}
+              <b className="text-ink">{state.email}</b> over a secure channel yourself.
+              The password is shown once.
+            </>
+          )}{" "}
+          They should change it and turn on two-factor authentication on first sign-in.
         </p>
         <div className="mt-3 flex items-center gap-2 rounded-inner bg-subtle px-3.5 py-2.5">
           <code className="flex-1 truncate font-mono text-sm text-ink">{state.tempPassword}</code>
