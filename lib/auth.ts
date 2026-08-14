@@ -84,13 +84,20 @@ export async function getSessionUser(): Promise<SessionProfile | null> {
   return mapProfile(data as unknown as ProfileRow);
 }
 
-/** Where a signed-in account should land after login, by account type/role. */
+/**
+ * Where a signed-in account should land after login.
+ *
+ * Every branch must return somewhere the account can actually STAY: pointing at
+ * a page whose layout rejects it produces a redirect loop, because /login sends
+ * authenticated users straight back here.
+ */
 export function landingPath(locale: string, p: SessionProfile): string {
+  // An unverified account can't enter the app at all — send it directly to the
+  // page explaining why, rather than bouncing off the app layout first.
+  if (p.accountStatus !== "verified") return `/${locale}/account-pending`;
+
   if (p.accountType === "patient") return `/${locale}/portal`;
-  // Introducers have no workspace yet, and the (app) area rejects non-clinicians
-  // — sending them to /referring bounced them to /login, which sent them back
-  // here, looping forever. Land them on the account page that explains where
-  // their registration stands.
+  // Introducers have no workspace yet, and the (app) area rejects non-clinicians.
   if (p.accountType === "introducer") return `/${locale}/account-pending`;
   const home: Record<Role, string> = {
     public: "/",

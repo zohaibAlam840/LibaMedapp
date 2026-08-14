@@ -1,139 +1,169 @@
-import { Archive, Trash2 } from "lucide-react";
+import { Archive, Clock, Inbox, ShieldCheck } from "lucide-react";
 import { Card, CardTitle } from "@/components/ui/Card";
-import Button from "@/components/ui/Button";
-import Chip from "@/components/ui/Chip";
-import SegmentedControl from "@/components/ui/SegmentedControl";
+import EmptyState from "@/components/ui/EmptyState";
 import ResponsiveTable from "@/components/ui/ResponsiveTable";
+import LogDataRequestForm from "@/components/admin/LogDataRequestForm";
+import DataRequestRow from "@/components/admin/DataRequestRow";
+import {
+  getDataRequests,
+  getRetentionPolicy,
+  getRetentionSchedule,
+} from "@/lib/db/dsar";
 
-// 9E · Retention / erasure / DSAR (#59). Three areas; the segmented control
-// stands in for tabs (design-only — no client tab state yet).
-const RETENTION = [
-  { cat: "Referral records", corridor: "France", schedule: "20 years", review: "12 Mar 2044", due: "0" },
-  { cat: "Referral records", corridor: "Israel", schedule: "10 years", review: "08 Jan 2036", due: "0" },
-  { cat: "Imaging (DICOM)", corridor: "All", schedule: "8 years", review: "01 Sep 2034", due: "2" },
-  { cat: "Audit events", corridor: "All", schedule: "As required", review: "—", due: "0" },
-];
+// 9E · Retention & data-subject requests (#58).
+// Two legal duties in one place: answer a person's request about their data
+// within one calendar month, and destroy records once the corridor's retention
+// period expires.
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  const [requests, schedule, policy] = await Promise.all([
+    getDataRequests(),
+    getRetentionSchedule(),
+    getRetentionPolicy(),
+  ]);
 
-const DSARS = [
-  { id: "DSAR-0021", type: "Access", received: "16 Jul 2026", deadline: "13 Aug 2026", days: 26, assignee: "Sam Okafor", status: "In progress" },
-  { id: "DSAR-0019", type: "Erasure", received: "02 Jul 2026", deadline: "30 Jul 2026", days: 12, assignee: "Sam Okafor", status: "Awaiting corridor confirm" },
-  { id: "DSAR-0016", type: "Rectification", received: "20 Jun 2026", deadline: "18 Jul 2026", days: 0, assignee: "Jordan Ellis", status: "Due today" },
-];
+  const open = requests.filter((r) => r.status === "open" || r.status === "in-progress");
+  const closed = requests.filter((r) => r.status === "fulfilled" || r.status === "refused");
+  const overdue = open.filter((r) => r.overdue);
+  const dueForDeletion = schedule.filter((s) => s.due);
 
-export default async function Page() {
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-[28px] font-semibold text-ink">Retention &amp; DSAR</h1>
+          <h1 className="text-[28px] font-semibold text-ink">Retention &amp; data requests</h1>
           <p className="mt-1 text-[15px] text-ink-secondary">
-            Retention schedules, scheduled erasure, and data-subject requests —
-            each action logged.
+            A person may ask for a copy of their data, or its erasure. You must
+            respond within one calendar month.
           </p>
         </div>
-        <SegmentedControl
-          name="retention-tab"
-          defaultValue="retention"
-          options={[
-            { value: "retention", label: "Retention" },
-            { value: "erasure", label: "Erasure" },
-            { value: "dsar", label: "DSAR" },
-          ]}
-        />
+        <LogDataRequestForm locale={locale} />
       </div>
 
+      {overdue.length > 0 && (
+        <p className="rounded-inner bg-danger-bg px-4 py-3 text-[13px] font-medium text-danger-text">
+          {overdue.length} request{overdue.length > 1 ? "s are" : " is"} past the statutory
+          deadline. Responding late is itself a reportable breach.
+        </p>
+      )}
+
+      {/* Open requests */}
       <Card>
-        <CardTitle>Retention schedule</CardTitle>
-        <ResponsiveTable
-          columns={[
-            { key: "cat", label: "Data category" },
-            { key: "corridor", label: "Corridor" },
-            { key: "schedule", label: "Schedule" },
-            { key: "review", label: "Next review" },
-            { key: "due", label: "Items due", align: "end" },
-          ]}
-          rows={RETENTION.map((r, i) => ({
-            id: `${r.cat}-${i}`,
-            cells: {
-              cat: <span className="font-medium">{r.cat}</span>,
-              corridor: r.corridor,
-              schedule: r.schedule,
-              review: r.review,
-              due:
-                r.due === "0" ? (
-                  <span className="text-ink-muted">0</span>
-                ) : (
-                  <Chip size="sm" className="bg-warning-bg text-warning-text">{r.due} due</Chip>
-                ),
-            },
-          }))}
-        />
+        <CardTitle>
+          Open requests{open.length > 0 ? ` · ${open.length}` : ""}
+        </CardTitle>
+        {open.length === 0 ? (
+          <EmptyState
+            icon={Inbox}
+            title="No open requests"
+            description="Log a request as soon as it arrives — that's what starts the one-month clock."
+          />
+        ) : (
+          <ul className="flex flex-col gap-3">
+            {open.map((r) => (
+              <DataRequestRow key={r.id} request={r} locale={locale} />
+            ))}
+          </ul>
+        )}
       </Card>
 
+      {/* Records due for deletion */}
       <Card>
-        <CardTitle
-          action={
-            <Button variant="secondary" size="sm">
-              <Trash2 aria-hidden className="size-4" /> Review erasure queue
-            </Button>
-          }
-        >
-          <span className="flex items-center gap-2">
-            <Archive aria-hidden className="size-4.5 text-ink-secondary" /> Erasure queue
-          </span>
+        <CardTitle>
+          Records due for deletion{dueForDeletion.length > 0 ? ` · ${dueForDeletion.length}` : ""}
         </CardTitle>
-        <p className="text-sm text-ink-secondary">
-          2 imaging items are past their retention window and flagged for
-          anonymisation review. Deletion requires confirm-and-log and cannot be
-          undone.
+        {schedule.length === 0 ? (
+          <EmptyState
+            icon={Clock}
+            title="Nothing scheduled yet"
+            description="Each referral gets a deletion date from its corridor's retention period."
+          />
+        ) : (
+          <ResponsiveTable
+            columns={[
+              { key: "ref", label: "Case" },
+              { key: "corridor", label: "Corridor" },
+              { key: "until", label: "Keep until" },
+              { key: "state", label: "Status" },
+            ]}
+            rows={schedule.slice(0, 25).map((s) => ({
+              id: s.ref,
+              cells: {
+                ref: <span className="font-medium text-ink">{s.ref}</span>,
+                corridor: s.corridorLabel,
+                until: s.retentionUntil,
+                state: s.redacted ? (
+                  <span className="inline-flex items-center gap-1 text-[13px] text-ink-muted">
+                    <ShieldCheck aria-hidden className="size-3.5" />
+                    Erased
+                  </span>
+                ) : s.due ? (
+                  <span className="rounded-full bg-danger-bg px-2.5 py-0.5 text-[11px] font-semibold text-danger-text">
+                    Due for deletion
+                  </span>
+                ) : (
+                  <span className="text-[13px] text-ink-secondary">
+                    {s.daysLeft > 365
+                      ? `${Math.floor(s.daysLeft / 365)} years left`
+                      : `${s.daysLeft} days left`}
+                  </span>
+                ),
+              },
+            }))}
+          />
+        )}
+        <p className="mt-3 text-xs text-ink-muted">
+          Deletion is not automatic — a person reviews each record, because a case
+          under complaint or litigation must be kept beyond its normal period.
         </p>
       </Card>
 
+      {/* Policy */}
       <Card>
-        <CardTitle
-          action={
-            <Button size="sm">New request</Button>
-          }
-        >
-          Data-subject requests
-        </CardTitle>
+        <CardTitle>Retention policy by corridor</CardTitle>
         <ResponsiveTable
           columns={[
-            { key: "id", label: "Request" },
-            { key: "type", label: "Type" },
-            { key: "received", label: "Received" },
-            { key: "deadline", label: "Deadline" },
-            { key: "assignee", label: "Assignee" },
-            { key: "status", label: "Status" },
+            { key: "corridor", label: "Corridor" },
+            { key: "years", label: "Records kept for" },
+            { key: "basis", label: "Basis" },
           ]}
-          rows={DSARS.map((d) => ({
-            id: d.id,
+          rows={policy.map((p) => ({
+            id: p.id,
             cells: {
-              id: <span className="font-medium">{d.id}</span>,
-              type: d.type,
-              received: d.received,
-              deadline: (
-                <span className="flex flex-col">
-                  {d.deadline}
-                  <span
-                    className={
-                      d.days === 0
-                        ? "text-xs text-danger-text"
-                        : d.days <= 12
-                          ? "text-xs text-warning-text"
-                          : "text-xs text-ink-muted"
-                    }
-                  >
-                    {d.days === 0 ? "due today" : `${d.days} days left`}
-                  </span>
-                </span>
-              ),
-              assignee: d.assignee,
-              status: <Chip size="sm">{d.status}</Chip>,
+              corridor: <span className="font-medium text-ink">{p.label}</span>,
+              years: `${p.years} years`,
+              basis:
+                p.years >= 20
+                  ? `${p.country} health-record law (the stricter of the two countries)`
+                  : "UK health-record guidance",
             },
           }))}
         />
       </Card>
+
+      {/* Closed */}
+      {closed.length > 0 && (
+        <Card>
+          <CardTitle>Closed requests</CardTitle>
+          <ul className="flex flex-col gap-3">
+            {closed.slice(0, 20).map((r) => (
+              <DataRequestRow key={r.id} request={r} locale={locale} />
+            ))}
+          </ul>
+        </Card>
+      )}
+
+      <p className="flex items-start gap-2.5 rounded-inner bg-subtle p-3.5 text-[13px] text-ink-secondary">
+        <Archive aria-hidden className="mt-0.5 size-4 shrink-0" />
+        Erasure redacts the personal data but keeps the audit trail, which no
+        longer identifies the person. That trail is the evidence the erasure
+        happened, and it protects every other case on the platform — so it is
+        never deleted.
+      </p>
     </div>
   );
 }

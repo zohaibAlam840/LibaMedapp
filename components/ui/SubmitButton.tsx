@@ -17,6 +17,8 @@ export default function SubmitButton({
   size,
   className,
   disabled,
+  name,
+  value,
 }: {
   children: React.ReactNode;
   /** Optional label swap while submitting, e.g. "Saving…". */
@@ -25,6 +27,9 @@ export default function SubmitButton({
   size?: React.ComponentProps<typeof Button>["size"];
   className?: string;
   disabled?: boolean;
+  /** Lets one form carry several intents (e.g. Save / Refuse / Fulfil). */
+  name?: string;
+  value?: string;
 }) {
   const { pending } = useFormStatus();
 
@@ -36,6 +41,8 @@ export default function SubmitButton({
       className={className}
       loading={pending}
       disabled={pending || disabled}
+      name={name}
+      value={value}
     >
       {pending && pendingLabel ? pendingLabel : children}
     </Button>

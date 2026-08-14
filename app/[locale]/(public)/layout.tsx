@@ -91,6 +91,11 @@ export default async function PublicLayout({
           <p className="text-xs text-ink-muted">
             © {new Date().getFullYear()} {t.footer.rights}
           </p>
+          {/* Controller identity — expected on a UK site processing health data. */}
+          <p className="text-xs text-ink-muted">
+            Libamed Ltd, registered in Wales no. 17272473. Registered with the
+            Information Commissioner&rsquo;s Office, reference ZC220043.
+          </p>
         </div>
       </footer>
     </div>

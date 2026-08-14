@@ -91,27 +91,51 @@ export default async function Page({
           id: "retention",
           heading: "Retention",
           children: (
-            <p>
-              Clinical records are retained per the schedule of the strictest
-              involved jurisdiction, then flagged for deletion or anonymisation
-              review. Audit records are retained longer, as required for
-              regulatory accountability. The full schedule per data category and
-              corridor is available on request.
-            </p>
+            <>
+              <p>
+                Clinical records are kept for the period required by the
+                strictest jurisdiction involved in the referral —{" "}
+                <strong>20 years</strong> where French health-record law applies,
+                and <strong>10 years</strong> for our other corridors — measured
+                from the last activity on the case.
+              </p>
+              <p>
+                Once that period expires the record is flagged for review rather
+                than deleted automatically, because a case subject to a complaint
+                or legal claim must be kept for longer. Audit records are
+                retained as required for regulatory accountability.
+              </p>
+            </>
           ),
         },
         {
           id: "your-rights",
           heading: "Your rights and DSARs",
           children: (
-            <p>
-              Patients and clinicians can request access, rectification, or
-              erasure of their personal data. We respond within the shortest
-              statutory window across the corridors involved in the request.
-              Requests can be raised through the referring clinician or directly
-              via the contact page; each request is logged and tracked to
-              completion.
-            </p>
+            <>
+              <p>
+                Patients and clinicians can request access to, rectification of,
+                or erasure of their personal data, and can ask for it in a
+                portable form. We respond within{" "}
+                <strong>one calendar month</strong> of receiving the request, as
+                required by UK GDPR. Requests can be raised through the referring
+                clinician or via the contact page; each one is logged with its
+                deadline and tracked to completion.
+              </p>
+              <p>
+                Erasure removes your personal data from the referral record and
+                deletes the associated documents. The tamper-evident audit trail
+                is retained, because it is the evidence that the erasure was
+                carried out and it protects every other case on the platform —
+                but it no longer identifies you.
+              </p>
+              <p>
+                If you are unhappy with how we have handled your data you can
+                complain to the Information Commissioner&rsquo;s Office: Wycliffe
+                House, Water Lane, Wilmslow, Cheshire SK9 5AF · 0303 123 1113 ·
+                ico.org.uk
+              </p>
+            </>
           ),
         },
         {
@@ -144,12 +168,23 @@ export default async function Page({
           id: "contact",
           heading: "Contact and DPO",
           children: (
-            <p>
-              Data-protection enquiries: LibaMed Ltd, Cardiff, Wales, United
-              Kingdom (company no. 17272473). A Data Protection Officer
-              appointment is in progress; until then the registered office is
-              the contact point for all data-protection matters.
-            </p>
+            <>
+              <p>
+                The data controller is <strong>Libamed Ltd</strong>, 58 Ael-Y-Bryn,
+                Caerdydd (Cardiff) CF23 9LH, Wales, United Kingdom — company
+                no. 17272473.
+              </p>
+              <p>
+                We are registered with the Information Commissioner&rsquo;s Office
+                under registration reference{" "}
+                <strong>ZC220043</strong>, valid to 10 August 2027.
+              </p>
+              <p>
+                A Data Protection Officer appointment is in progress; until then
+                the registered office is the contact point for all
+                data-protection matters.
+              </p>
+            </>
           ),
         },
       ]}

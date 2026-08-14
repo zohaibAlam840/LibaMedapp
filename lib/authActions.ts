@@ -20,8 +20,18 @@ export async function signInAction(_prev: AuthState, formData: FormData): Promis
   if (error) return { error: error.message };
 
   const user = await getSessionUser();
+  if (!user) {
+    // Authenticated with Supabase but no profiles row — the account is
+    // half-created and cannot be used. End the session rather than leaving them
+    // signed in to nothing.
+    await supabase.auth.signOut();
+    return {
+      error:
+        "This account isn't set up yet. Please contact your administrator so they can finish creating it.",
+    };
+  }
   // redirect() throws NEXT_REDIRECT (expected) — must be outside any try/catch.
-  redirect(user ? landingPath(locale, user) : `/${locale}`);
+  redirect(landingPath(locale, user));
 }
 
 /** Sign out and return to the login page. */

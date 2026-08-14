@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { Sidebar, BottomTabs } from "@/components/shell/AppNav";
 import UserMenu from "@/components/auth/UserMenu";
 import LocaleSwitcher from "@/components/shell/LocaleSwitcher";
-import { getSessionUser, needsMfaChallenge } from "@/lib/auth";
+import { getSessionUser, landingPath, needsMfaChallenge } from "@/lib/auth";
 import { ROLE_LABEL } from "@/lib/rbac";
 import { DEMO_ROLE_SIDEBAR_COOKIE } from "@/lib/demoRole";
 
@@ -33,7 +33,9 @@ export default async function AppLayout({
   // A verified second factor that hasn't been satisfied on this sign-in blocks
   // the app until the code is entered.
   if (await needsMfaChallenge()) {
-    redirect(`/${locale}/mfa/challenge`);
+    // Carry the role's home through so verifying lands them in the app,
+    // not back on the marketing site.
+    redirect(`/${locale}/mfa/challenge?next=${encodeURIComponent(landingPath(locale, user))}`);
   }
 
   const role = user.role;

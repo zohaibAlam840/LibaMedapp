@@ -124,6 +124,24 @@ export async function insertReferral(r: NewReferral): Promise<string> {
   const sb = supabaseAdmin();
   const ref = await nextReferralRef();
   const now = new Date().toISOString();
+
+  // Start the retention clock from the corridor's own period (France 20 years,
+  // most others 10) so the deletion schedule is right from day one.
+  let retentionUntil: string | null = null;
+  try {
+    const { data } = await sb
+      .from("corridors")
+      .select("retention_years")
+      .eq("id", r.corridorId)
+      .maybeSingle();
+    const years = (data as { retention_years?: number } | null)?.retention_years ?? 10;
+    const d = new Date();
+    d.setUTCFullYear(d.getUTCFullYear() + years);
+    retentionUntil = d.toISOString().slice(0, 10);
+  } catch {
+    // Column arrives with migration 004 — a missing date just means it gets
+    // backfilled later, never a failed referral.
+  }
   const { data, error } = await sb
     .from("referrals")
     .insert({
@@ -140,6 +158,7 @@ export async function insertReferral(r: NewReferral): Promise<string> {
       ns_justification: r.nsJustification ?? null,
       ns_declared_by: r.nsDeclaredBy ?? null,
       ns_declared_at: r.nsReason ? now : null,
+      ...(retentionUntil ? { retention_until: retentionUntil } : {}),
       clinical_summary: r.clinicalSummary ?? null,
       clinical_history: r.clinicalHistory ?? null,
       urgency: r.urgency ?? null,
