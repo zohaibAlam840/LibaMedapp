@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { LOCALES, DEFAULT_LOCALE } from "@/lib/i18n";
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/lib/supabase/env";
 
 // Next 16 "proxy" (formerly middleware). Two jobs:
 //  1. i18n — ensure every request carries a locale prefix.
@@ -24,8 +25,8 @@ export async function proxy(request: NextRequest) {
   }
 
   // 2 · Supabase session refresh (skip if not configured yet).
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  const url = SUPABASE_URL;
+  const key = SUPABASE_PUBLISHABLE_KEY;
   if (!url || !key) return NextResponse.next();
 
   let response = NextResponse.next({ request });

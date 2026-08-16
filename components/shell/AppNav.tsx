@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import Avatar from "@/components/ui/Avatar";
+import { signOutAction } from "@/lib/authActions";
 import type { Role } from "@/lib/rbac";
 import { ROLE_LABEL } from "@/lib/rbac";
 import { DEMO_ROLE_SIDEBAR_COOKIE } from "@/lib/demoRole";
@@ -154,7 +155,7 @@ export function Sidebar({
       <div className="flex flex-col gap-0.5 border-t border-line px-2.5 py-2">
         <UtilLink locale={locale} href="/faq" label="Help & glossary" icon={HelpCircle} collapsed={collapsed} />
         <UtilLink locale={locale} href="/account" label="Settings" icon={Settings} collapsed={collapsed} />
-        <UtilLink locale={locale} href="/login" label="Sign out" icon={LogOut} collapsed={collapsed} danger />
+        <SignOutButton locale={locale} collapsed={collapsed} />
       </div>
     </aside>
   );
@@ -206,6 +207,31 @@ function SidebarLink({
       <span className="flex-1 truncate">{item.label}</span>
       {item.badge ? <CountBadge count={item.badge} /> : null}
     </Link>
+  );
+}
+
+/**
+ * Sign out — a submit button, not a link. Linking to /login only *navigated*
+ * there while the session stayed alive, so the login page bounced straight back
+ * to the clinician's landing page. This ends the session first.
+ */
+function SignOutButton({ locale, collapsed }: { locale: string; collapsed: boolean }) {
+  return (
+    <form action={signOutAction}>
+      <input type="hidden" name="locale" value={locale} />
+      <button
+        type="submit"
+        title={collapsed ? "Sign out" : undefined}
+        aria-label="Sign out"
+        className={cn(
+          "flex w-full items-center gap-3 rounded-inner px-3 py-2.5 text-start text-[15px] text-danger-text transition-colors hover:bg-danger-bg",
+          collapsed && "mx-auto size-11 justify-center px-0",
+        )}
+      >
+        <LogOut aria-hidden className="size-5 shrink-0 rtl:-scale-x-100" />
+        {!collapsed && <span className="flex-1 truncate">Sign out</span>}
+      </button>
+    </form>
   );
 }
 

@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getSessionUser, landingPath } from "@/lib/auth";
@@ -15,31 +16,74 @@ export async function signInAction(_prev: AuthState, formData: FormData): Promis
   const email = String(formData.get("email") || "").trim();
   const password = String(formData.get("password") || "");
 
-  const supabase = await supabaseServer();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) return { error: error.message };
+  let user: Awaited<ReturnType<typeof getSessionUser>>;
+  try {
+    const supabase = await supabaseServer();
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) return { error: error.message };
 
-  const user = await getSessionUser();
-  if (!user) {
-    // Authenticated with Supabase but no profiles row — the account is
-    // half-created and cannot be used. End the session rather than leaving them
-    // signed in to nothing.
-    await supabase.auth.signOut();
-    return {
-      error:
-        "This account isn't set up yet. Please contact your administrator so they can finish creating it.",
-    };
+    user = await getSessionUser();
+    if (!user) {
+      // Authenticated with Supabase but no profiles row — the account is
+      // half-created and cannot be used. End the session rather than leaving
+      // them signed in to nothing.
+      await supabase.auth.signOut();
+      return {
+        error:
+          "This account isn't set up yet. Please contact your administrator so they can finish creating it.",
+      };
+    }
+  } catch (err) {
+    // Misconfigured host or Supabase outage — don't hand the clinician a stack
+    // trace, and don't leave the form spinning.
+    console.error("[auth] sign-in failed:", (err as Error)?.message ?? err);
+    return { error: "Sign-in is temporarily unavailable. Please try again shortly." };
   }
+
   // redirect() throws NEXT_REDIRECT (expected) — must be outside any try/catch.
   redirect(landingPath(locale, user));
 }
 
-/** Sign out and return to the login page. */
+/**
+ * Sign out and return to the login page.
+ *
+ * Always ends at /login. Sign-out is the one action that must not be able to
+ * strand someone: if the session is already gone, or Supabase can't be reached,
+ * dropping the local cookies and moving on is the correct outcome anyway.
+ */
 export async function signOutAction(formData: FormData): Promise<void> {
   const locale = String(formData.get("locale") || "en");
-  const supabase = await supabaseServer();
-  await supabase.auth.signOut();
+
+  try {
+    const supabase = await supabaseServer();
+    // Default scope on purpose: this revokes the refresh token at Supabase, so
+    // the session is dead server-side and not merely forgotten by this browser.
+    const { error } = await supabase.auth.signOut();
+    if (error) console.warn("[auth] sign-out revoke failed:", error.message);
+  } catch (err) {
+    console.error("[auth] sign-out failed:", (err as Error)?.message ?? err);
+  }
+
+  await clearSupabaseCookies();
+
+  // redirect() throws NEXT_REDIRECT (expected) — must be outside any try/catch.
   redirect(`/${locale}/login`);
+}
+
+/**
+ * Belt and braces: delete any leftover `sb-*` auth cookies directly. If
+ * signOut() threw before its own cookie writes, a stale token would otherwise
+ * survive and the next page would sign the person straight back in.
+ */
+async function clearSupabaseCookies(): Promise<void> {
+  try {
+    const store = await cookies();
+    for (const { name } of store.getAll()) {
+      if (name.startsWith("sb-")) store.delete(name);
+    }
+  } catch {
+    /* read-only cookie store (not a Server Action) — nothing to clear */
+  }
 }
 
 /**
@@ -63,7 +107,14 @@ export async function signUpAction(_prev: AuthState, formData: FormData): Promis
     return { error: "Enter a valid email and a password of at least 8 characters." };
   }
 
-  const admin = supabaseAdmin();
+  let admin: ReturnType<typeof supabaseAdmin>;
+  try {
+    admin = supabaseAdmin();
+  } catch (err) {
+    console.error("[auth] sign-up failed:", (err as Error)?.message ?? err);
+    return { error: "Registration is temporarily unavailable. Please try again shortly." };
+  }
+
   const { data: created, error: authErr } = await admin.auth.admin.createUser({
     email,
     password,

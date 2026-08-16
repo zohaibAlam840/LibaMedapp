@@ -84,6 +84,17 @@ export const fr: Dictionary = {
       "TLS 1.3 en transit",
       "Hébergement certifié HDS dans l’EEE pour la France",
     ],
+    specialtiesLede:
+      "Les hôpitaux partenaires proposent un large éventail de spécialités et de technologies médicales. Ce qui peut être orienté dépend du couloir — la plateforme bloque tout ce qui est couramment disponible au NHS.",
+    specialtyCategories: [
+      { title: "Cancérologie", text: "Oncologie, radiothérapie et thérapies cellulaires, y compris des traitements non financés au Royaume-Uni." },
+      { title: "Chirurgie complexe", text: "Interventions thoraciques, orthopédiques, neurologiques et reconstructrices dans des centres à fort volume." },
+      { title: "Diagnostic et imagerie", text: "Imagerie et anatomopathologie avancées, avec transfert sécurisé des examens DICOM au spécialiste désigné." },
+      { title: "Thérapies avancées", text: "Fertilité, transplantation et traitements émergents dont l'accès est limité dans le pays d'origine." },
+    ],
+    securityTitle: "Conçu selon une norme clinique",
+    securityLede:
+      "Les dossiers des patients sont protégés en transit, au repos et dans la région exigée par leur couloir.",
     securityLink: "Aperçu de la sécurité",
     faqTitle: "Questions fréquentes",
     faqAll: "Toutes les questions et le glossaire",

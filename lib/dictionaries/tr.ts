@@ -84,6 +84,17 @@ export const tr: Dictionary = {
       "Aktarımda TLS 1.3",
       "Fransa için AEA’da HDS sertifikalı barındırma",
     ],
+    specialtiesLede:
+      "Ortak hastaneler geniş bir uzmanlık ve tıbbi teknoloji yelpazesi sunar. Neyin yönlendirilebileceği koridora bağlıdır — platform, NHS'te rutin olarak sunulan her şeyi engeller.",
+    specialtyCategories: [
+      { title: "Kanser bakımı", text: "Onkoloji, radyoterapi ve hücresel tedaviler; Birleşik Krallık'ta karşılanmayan tedaviler dâhil." },
+      { title: "Kompleks cerrahi", text: "Yüksek hacimli merkezlerde torasik, ortopedik, nörolojik ve rekonstrüktif girişimler." },
+      { title: "Tanı ve görüntüleme", text: "İleri görüntüleme ve patoloji; DICOM tetkikleri adı belirtilen uzmana güvenle aktarılır." },
+      { title: "İleri tedaviler", text: "Erişimin sınırlı olduğu tüp bebek, nakil ve gelişmekte olan tedaviler." },
+    ],
+    securityTitle: "Klinik standartta tasarlandı",
+    securityLede:
+      "Hasta kayıtları aktarım sırasında, saklanırken ve koridorun gerektirdiği bölgede korunur.",
     securityLink: "Güvenliğe genel bakış",
     faqTitle: "Sık sorulan sorular",
     faqAll: "Tüm sorular ve sözlük",

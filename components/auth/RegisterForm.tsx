@@ -6,6 +6,7 @@ import { Briefcase, Check, ShieldCheck, Stethoscope, TriangleAlert } from "lucid
 import Button from "@/components/ui/Button";
 import Checkbox from "@/components/ui/Checkbox";
 import { Field, Input, Select } from "@/components/ui/Field";
+import PasswordInput from "@/components/ui/PasswordInput";
 import { SectionLabel } from "@/components/ui/Card";
 import { cn } from "@/lib/cn";
 import { signUpAction, type AuthState } from "@/lib/authActions";
@@ -223,7 +224,7 @@ export default function RegisterForm({ locale }: { locale: string }) {
       )}
 
       <Field label="Password" htmlFor="password" hint="At least 8 characters.">
-        <Input id="password" name="password" type="password" autoComplete="new-password" required />
+        <PasswordInput id="password" name="password" autoComplete="new-password" required />
       </Field>
 
       {state.error && (

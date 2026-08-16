@@ -84,6 +84,17 @@ export const en: Dictionary = {
       "TLS 1.3 in transit",
       "HDS-certified EEA hosting for France",
     ],
+    specialtiesLede:
+      "Partner hospitals provide a wide range of specialties and medical technologies. What can be referred depends on the corridor — the platform blocks anything routinely available on the NHS.",
+    specialtyCategories: [
+      { title: "Cancer care", text: "Oncology, radiotherapy and cell therapies, including treatments not commissioned in the UK." },
+      { title: "Complex surgery", text: "Thoracic, orthopaedic, neurological and reconstructive procedures at high-volume centres." },
+      { title: "Diagnostics & imaging", text: "Advanced imaging and pathology, with DICOM studies transferred securely to the named specialist." },
+      { title: "Advanced therapies", text: "Fertility, transplantation and emerging treatments where access at home is limited." },
+    ],
+    securityTitle: "Built to a clinical standard",
+    securityLede:
+      "Patient records are protected in transit, at rest, and in the region their corridor requires.",
     securityLink: "Security overview",
     faqTitle: "Common questions",
     faqAll: "All questions & glossary",

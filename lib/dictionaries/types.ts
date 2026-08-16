@@ -63,6 +63,10 @@ export interface Dictionary {
     specialtiesTitle: string;
     viewAll: string;
     security: string[];
+    specialtiesLede: string;
+    specialtyCategories: { title: string; text: string }[];
+    securityTitle: string;
+    securityLede: string;
     securityLink: string;
     faqTitle: string;
     faqAll: string;

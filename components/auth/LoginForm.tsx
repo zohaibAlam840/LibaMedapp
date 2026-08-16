@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { TriangleAlert } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Field";
+import PasswordInput from "@/components/ui/PasswordInput";
 import { signInAction, type AuthState } from "@/lib/authActions";
 
 export default function LoginForm({ locale }: { locale: string }) {
@@ -18,7 +19,7 @@ export default function LoginForm({ locale }: { locale: string }) {
       </Field>
 
       <Field label="Password" htmlFor="password">
-        <Input id="password" name="password" type="password" required autoComplete="current-password" />
+        <PasswordInput id="password" name="password" required autoComplete="current-password" />
       </Field>
 
       {state.error && (

@@ -1,5 +1,6 @@
 import Button from "@/components/ui/Button";
-import { Field, Input } from "@/components/ui/Field";
+import { Field } from "@/components/ui/Field";
+import PasswordInput from "@/components/ui/PasswordInput";
 
 // 9B · Reset password (from emailed link).
 export default async function Page({
@@ -19,11 +20,11 @@ export default async function Page({
       </div>
 
       <Field label="New password" htmlFor="password">
-        <Input id="password" type="password" autoComplete="new-password" />
+        <PasswordInput id="password" autoComplete="new-password" />
       </Field>
 
       <Field label="Confirm new password" htmlFor="confirm">
-        <Input id="confirm" type="password" autoComplete="new-password" />
+        <PasswordInput id="confirm" autoComplete="new-password" />
       </Field>
 
       <Button href={`/${locale}/login`} className="w-full">

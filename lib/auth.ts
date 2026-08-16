@@ -64,24 +64,54 @@ function mapProfile(row: ProfileRow): SessionProfile {
   };
 }
 
-/** The signed-in user's profile, or null if not authenticated / no profile. */
+/**
+ * The signed-in user's profile, or null if not authenticated / no profile.
+ *
+ * Never throws. "Who is signed in?" is asked by the login page itself, so a
+ * throw here took down the one page a locked-out clinician needs — a missing
+ * Supabase env var on the host turned /login into a 500. Failing to *null*
+ * instead is fail-closed everywhere: no session means no access, and the
+ * protected layouts bounce to login rather than serving anything.
+ */
 export async function getSessionUser(): Promise<SessionProfile | null> {
-  const supabase = await supabaseServer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
+  try {
+    const supabase = await supabaseServer();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return null;
 
-  const { data } = await supabaseAdmin()
-    .from("profiles")
-    .select(
-      "id, auth_user_id, account_type, clinician_role, name, email, account_status, gmc_number, hospital_id, corridor_ids, can_manage_users, can_export_audit, can_edit_corridors, patient_referral_id",
-    )
-    .eq("auth_user_id", user.id)
-    .maybeSingle();
+    const { data } = await supabaseAdmin()
+      .from("profiles")
+      .select(
+        "id, auth_user_id, account_type, clinician_role, name, email, account_status, gmc_number, hospital_id, corridor_ids, can_manage_users, can_export_audit, can_edit_corridors, patient_referral_id",
+      )
+      .eq("auth_user_id", user.id)
+      .maybeSingle();
 
-  if (!data) return null;
-  return mapProfile(data as unknown as ProfileRow);
+    if (!data) return null;
+    return mapProfile(data as unknown as ProfileRow);
+  } catch (err) {
+    if (isFrameworkSignal(err)) throw err;
+    // Loud in the logs, silent in the UI — this is a server misconfiguration or
+    // an outage, not something the person at the keyboard can act on.
+    console.error("[auth] session read failed:", (err as Error)?.message ?? err);
+    return null;
+  }
+}
+
+/**
+ * Next throws through user code to steer rendering: `DYNAMIC_SERVER_USAGE`
+ * (cookies() during a static pass), NEXT_REDIRECT, NEXT_NOT_FOUND, and React's
+ * postpone for PPR. Swallowing those would let a page prerender as though
+ * nobody were signed in, so they have to be rethrown untouched.
+ */
+function isFrameworkSignal(err: unknown): boolean {
+  if (typeof err === "object" && err !== null) {
+    if ((err as { $$typeof?: symbol }).$$typeof === Symbol.for("react.postpone")) return true;
+    if (typeof (err as { digest?: unknown }).digest === "string") return true;
+  }
+  return false;
 }
 
 /**

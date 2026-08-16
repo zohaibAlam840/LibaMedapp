@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { TriangleAlert } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Field";
+import PasswordInput from "@/components/ui/PasswordInput";
 import { redeemPatientInviteAction, type InviteState } from "@/lib/patientActions";
 
 /** Redeems a patient invitation: sets a password and opens the portal. */
@@ -33,13 +34,7 @@ export default function JoinPortalForm({
         <Input id="jp-name" name="name" autoComplete="name" required />
       </Field>
       <Field label="Choose a password" htmlFor="jp-password" hint="At least 8 characters.">
-        <Input
-          id="jp-password"
-          name="password"
-          type="password"
-          autoComplete="new-password"
-          required
-        />
+        <PasswordInput id="jp-password" name="password" autoComplete="new-password" required />
       </Field>
 
       {state.error && (
