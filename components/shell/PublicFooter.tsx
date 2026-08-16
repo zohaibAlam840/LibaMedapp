@@ -54,8 +54,12 @@ export default async function PublicFooter({ locale }: { locale: string }) {
       </div>
 
       <div className="relative mx-auto max-w-6xl px-4 md:px-8">
-        {/* CTA card, pulled up over the section above. */}
-        <div className="-mt-14 overflow-hidden rounded-panel bg-navy shadow-elevated">
+        {/* No negative margin. It used to be pulled up over the section above,
+            which cost nothing visually — the footer's ground is `bg-page`, the
+            same as most page bodies, so the "overlap" never read as one — while
+            on any short page (hospitals, for one) the card rode up over live
+            content. */}
+        <div className="mt-20 overflow-hidden rounded-panel bg-navy shadow-elevated">
           <div className="flex flex-col gap-6 p-8 md:flex-row md:items-center md:justify-between md:p-12">
             <h2 className="max-w-lg text-2xl font-semibold leading-tight text-white md:text-3xl">
               {t.home.ctaTitle}

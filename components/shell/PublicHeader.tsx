@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Menu, X } from "lucide-react";
 import Button from "@/components/ui/Button";
 import LocaleSwitcher from "@/components/shell/LocaleSwitcher";
 import { cn } from "@/lib/cn";
@@ -38,6 +39,7 @@ export default function PublicHeader({
   const pathname = usePathname() ?? "";
   const overHero = pathname === base || pathname === `${base}/`;
   const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     if (!overHero) return;
@@ -47,7 +49,32 @@ export default function PublicHeader({
     return () => window.removeEventListener("scroll", onScroll);
   }, [overHero]);
 
-  const clear = overHero && !scrolled;
+  // Navigating with the sheet open would otherwise leave it covering the new
+  // page. Adjusted during render rather than in an effect — React's documented
+  // pattern for state that has to follow a changing input, and it covers
+  // back/forward too, which a click handler on each link would miss.
+  const [menuPath, setMenuPath] = useState(pathname);
+  if (menuPath !== pathname) {
+    setMenuPath(pathname);
+    setMenuOpen(false);
+  }
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMenuOpen(false);
+    document.addEventListener("keydown", onKey);
+    // Stop the page behind the sheet from scrolling under the finger.
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = previous;
+    };
+  }, [menuOpen]);
+
+  // While the sheet is open the bar needs its own background, or the sheet
+  // appears to hang off nothing over the hero.
+  const clear = overHero && !scrolled && !menuOpen;
 
   return (
     <header
@@ -74,15 +101,16 @@ export default function PublicHeader({
             LibaMed
           </Link>
 
-          {/* Compact, fixed-size, and `xl` rather than `lg`. The links have to
-              finish before the hero's gutter, but the gutter is a percentage of
-              the VIEWPORT while this nav is pinned by the max-w-6xl container —
-              so they diverge as the window narrows. Measured: the links end at
-              759px regardless of width, and the gutter reaches that point at
-              about 1240px. (Below `lg` this nav was already hidden with no
-              replacement, so this widens an existing gap rather than making a
-              new one.) */}
-          <nav aria-label="Site" className="hidden items-center gap-0.5 xl:flex">
+          {/* Compact, and shown from 1152px rather than at a stock breakpoint.
+              The links must finish before the hero's gutter, but the gutter is a
+              percentage of the VIEWPORT while this nav is pinned by the
+              max-w-6xl container, so the two converge as the window narrows.
+              Measured clearance between the last link and the gutter:
+                1024px -51   1152px +29   1280px +46   1440px +66
+              1024 is the only width that actually collides, so `lg` (1024) is
+              too early and `xl` (1280) hides the nav for no reason. Below 1152
+              the sheet takes over. */}
+          <nav aria-label="Site" className="hidden items-center gap-0.5 min-[1152px]:flex">
             {nav.map((item) => (
               <Link
                 key={item.href}
@@ -118,8 +146,62 @@ export default function PublicHeader({
           <Button variant={clear ? "accent" : "primary"} size="sm" href={`${base}/register`}>
             {registerLabel}
           </Button>
+
+          <button
+            type="button"
+            onClick={() => setMenuOpen((v) => !v)}
+            aria-expanded={menuOpen}
+            aria-controls="public-menu"
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            className={cn(
+              "flex size-9 items-center justify-center rounded-full transition-colors min-[1152px]:hidden",
+              clear
+                ? "text-white hover:bg-white/10"
+                : "text-ink-secondary hover:bg-subtle hover:text-ink",
+            )}
+          >
+            {menuOpen ? (
+              <X aria-hidden className="size-5" />
+            ) : (
+              <Menu aria-hidden className="size-5" />
+            )}
+          </button>
         </div>
       </div>
+
+      {/* Mobile / tablet sheet. The inline links are hidden below 1152px (the
+          hero's gutter would slice them), so without this there is no way to
+          reach the rest of the site on a phone. */}
+      {menuOpen && (
+        <div id="public-menu" className="fixed inset-x-0 bottom-0 top-16 z-20 min-[1152px]:hidden">
+          <button
+            type="button"
+            aria-label="Close menu"
+            onClick={() => setMenuOpen(false)}
+            className="absolute inset-0 h-full w-full cursor-default bg-black/40"
+          />
+          <nav
+            aria-label="Site"
+            className="relative max-h-full overflow-y-auto border-b border-line bg-card px-4 pb-6 pt-2 shadow-elevated md:px-8"
+          >
+            <div className="mx-auto flex max-w-6xl flex-col">
+              {nav.map((item) => (
+                <Link
+                  key={item.href}
+                  href={`${base}${item.href}`}
+                  className="border-b border-line py-3.5 text-[15px] font-medium text-ink last:border-0"
+                >
+                  {item.label}
+                </Link>
+              ))}
+              {/* Sign-in lives here too: its header button is hidden below `sm`. */}
+              <Button variant="secondary" href={`${base}/login`} className="mt-5">
+                {loginLabel}
+              </Button>
+            </div>
+          </nav>
+        </div>
+      )}
     </header>
   );
 }
