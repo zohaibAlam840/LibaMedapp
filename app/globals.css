@@ -119,6 +119,9 @@
   --border-strong: rgba(255, 255, 255, 0.28);
   --accent-soft: rgba(255, 255, 255, 0.1);
   --accent-border: rgba(255, 255, 255, 0.22);
+  /* Opaque, matching the band itself, so `ring-page` still punches a hole in
+   * lines that run behind a badge (see NumberedStepStrip's wave). */
+  --surface-page: #182238;
 }
 
 html {
