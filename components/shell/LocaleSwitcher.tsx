@@ -14,9 +14,12 @@ import { cn } from "@/lib/cn";
 export default function LocaleSwitcher({
   current,
   className,
+  inverse = false,
 }: {
   current: string;
   className?: string;
+  /** Trigger styling for dark grounds (the home hero's floating nav). */
+  inverse?: boolean;
 }) {
   const pathname = usePathname() ?? `/${current}`;
   const router = useRouter();
@@ -58,7 +61,12 @@ export default function LocaleSwitcher({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label="Change language"
-        className="flex h-9 items-center gap-1.5 rounded-full border border-line bg-card px-3 text-[13px] font-medium text-ink-secondary transition-colors hover:bg-subtle hover:text-ink"
+        className={cn(
+          "flex h-9 items-center gap-1.5 rounded-full border px-3 text-[13px] font-medium transition-colors",
+          inverse
+            ? "border-white/25 bg-white/10 text-white hover:bg-white/20"
+            : "border-line bg-card text-ink-secondary hover:bg-subtle hover:text-ink",
+        )}
       >
         <Globe aria-hidden className="size-4" />
         <span className="uppercase">{current}</span>

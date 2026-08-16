@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/cn";
 
-type Variant = "primary" | "accent" | "secondary" | "ghost" | "danger";
+type Variant = "primary" | "accent" | "secondary" | "ghost" | "inverse" | "danger";
 type Size = "sm" | "md" | "lg";
 
 const VARIANTS: Record<Variant, string> = {
@@ -11,6 +11,9 @@ const VARIANTS: Record<Variant, string> = {
   secondary:
     "bg-card text-ink border border-line hover:border-line-strong hover:bg-subtle",
   ghost: "text-ink-secondary hover:bg-subtle hover:text-ink",
+  // For dark grounds (the hero panel, the navy CTA band), where `secondary`'s
+  // white card and `primary`'s navy both disappear.
+  inverse: "border border-white/25 bg-white/10 text-white hover:bg-white/20",
   danger: "bg-danger-bg text-danger-text hover:opacity-90",
 };
 

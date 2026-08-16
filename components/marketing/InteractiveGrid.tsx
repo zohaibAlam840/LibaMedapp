@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { cn } from "@/lib/cn";
 
 /**
  * Interactive dot grid for the hero. A static grid sits underneath; a brighter
@@ -18,9 +19,16 @@ import { useEffect, useRef } from "react";
  */
 export default function InteractiveGrid({
   tone = "accent",
+  className,
 }: {
   /** "light" for dark grounds (the navy CTA band), where accent-on-navy reads muddy. */
   tone?: "accent" | "light";
+  /**
+   * Extra classes on the painted layer — used by the home hero to clip the dots
+   * to the dark panel so they don't speckle the photograph. Listeners still
+   * attach to the parent section, so the whole hero stays the hit area.
+   */
+  className?: string;
 } = {}) {
   const ref = useRef<HTMLDivElement>(null);
   const dot =
@@ -82,7 +90,10 @@ export default function InteractiveGrid({
       // Opacity comes from --spot alone. An `opacity-0` class alongside the
       // arbitrary value would be the same specificity and the winner would
       // depend on stylesheet order.
-      className="pointer-events-none absolute inset-0 transition-opacity duration-500 [opacity:var(--spot,0)]"
+      className={cn(
+        "pointer-events-none absolute inset-0 transition-opacity duration-500 [opacity:var(--spot,0)]",
+        className,
+      )}
       style={
         {
           "--mx": "50%",

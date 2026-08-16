@@ -98,6 +98,29 @@
     "Segoe UI", Roboto, Arial, sans-serif;
 }
 
+/*
+ * Navy band on the marketing pages. Alternating sections run dark, and rather
+ * than restating a colour on every child, this re-points the semantic tokens
+ * for the subtree — the same "dark mode is a token swap, not a rewrite"
+ * approach as [data-theme="dark"] above (spec §2.1). So `text-ink`,
+ * `text-ink-secondary`, `bg-card`, `bg-subtle` and `border-line` all keep
+ * working inside a navy section with no markup changes.
+ *
+ * `--accent` is deliberately NOT swapped: it is the fill behind white button
+ * text, and lightening it here would drop that pairing below AA.
+ */
+.section-invert {
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-muted: rgba(255, 255, 255, 0.5);
+  --surface-card: rgba(255, 255, 255, 0.06);
+  --surface-subtle: rgba(255, 255, 255, 0.08);
+  --border: rgba(255, 255, 255, 0.12);
+  --border-strong: rgba(255, 255, 255, 0.28);
+  --accent-soft: rgba(255, 255, 255, 0.1);
+  --accent-border: rgba(255, 255, 255, 0.22);
+}
+
 html {
   height: 100%;
   /* Let height/width keywords (auto) participate in transitions so the
