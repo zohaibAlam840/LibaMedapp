@@ -10,8 +10,12 @@ import type { PatientInvite } from "@/lib/db/patientInvites";
 
 /**
  * Invite the patient to the read-only portal. Access is per referral: the link
- * grants sight of this case only, and works once. Because no email is sent yet,
- * the clinician copies the link and passes it on themselves.
+ * grants sight of this case only, and works once.
+ *
+ * Only the referring clinician on the case can issue it — not an admin, who has
+ * neither the clinical relationship nor the consent that justifies the access.
+ * The link is emailed; it is also shown here to copy, because a bounced or
+ * filtered email must not leave the patient with no way in.
  */
 export default function InvitePatientCard({
   locale,

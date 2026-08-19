@@ -7,6 +7,8 @@ import LocaleSwitcher from "@/components/shell/LocaleSwitcher";
 import { getSessionUser, landingPath, needsMfaChallenge } from "@/lib/auth";
 import { ROLE_LABEL } from "@/lib/rbac";
 import { DEMO_ROLE_SIDEBAR_COOKIE } from "@/lib/demoRole";
+import { navBadgesFor } from "@/lib/nav";
+import { getCases } from "@/lib/db/referrals";
 
 // Authenticated app shell (Vol III §0.2): one app, three experiences by role.
 // Access is now gated by a real Supabase session — non-clinicians and
@@ -41,10 +43,19 @@ export default async function AppLayout({
   const role = user.role;
   const store = await cookies();
   const collapsed = store.get(DEMO_ROLE_SIDEBAR_COOKIE)?.value === "collapsed";
+  // Sidebar counts are per user, so they are computed here from the caller's
+  // own scoped cases rather than baked into the nav table.
+  const badges = navBadgesFor(role, await getCases(user));
 
   return (
     <div className="flex min-h-dvh">
-      <Sidebar locale={locale} role={role} userName={user.name} defaultCollapsed={collapsed} />
+      <Sidebar
+        locale={locale}
+        role={role}
+        userName={user.name}
+        defaultCollapsed={collapsed}
+        badges={badges}
+      />
 
       <div className="flex min-w-0 flex-1 flex-col pb-16 md:pb-0">
         <header className="flex items-center justify-between gap-3 px-4 py-3 md:px-8 md:py-4 print:hidden">
@@ -65,7 +76,7 @@ export default async function AppLayout({
         </main>
       </div>
 
-      <BottomTabs locale={locale} role={role} />
+      <BottomTabs locale={locale} role={role} badges={badges} />
     </div>
   );
 }

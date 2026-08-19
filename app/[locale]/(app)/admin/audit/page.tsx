@@ -1,104 +1,86 @@
-import { Download, Lock, Search } from "lucide-react";
-import { Card, CardTitle } from "@/components/ui/Card";
-import Button from "@/components/ui/Button";
-import Chip from "@/components/ui/Chip";
-import SearchInput from "@/components/ui/SearchInput";
-import { Select } from "@/components/ui/Field";
-import ResponsiveTable from "@/components/ui/ResponsiveTable";
+import { Lock, ShieldAlert, ShieldCheck } from "lucide-react";
+import { Card } from "@/components/ui/Card";
+import AuditBrowser from "@/components/admin/AuditBrowser";
+import { getSessionUser } from "@/lib/auth";
+import { auditCsv, getAuditEvents, verifyAuditChain } from "@/lib/db/audit";
 
-// 9E · Audit log viewer (#57) — acceptance §14.9. Append-only, tamper-evident.
-// Export gated on `canExportAudit` (Vol III §0.4). Admin views are themselves
-// audited.
-const EVENTS = [
-  { t: "18 Jul 2026 11:04:22", actor: "Dr. Noa Peretz", role: "receiving", action: "Downloaded", object: "MRI thorax (DICOM) · LM-2026-0142", ip: "Ramat Gan, IL", result: "OK" },
-  { t: "18 Jul 2026 10:58:07", actor: "Dr. Noa Peretz", role: "receiving", action: "Viewed", object: "Case LM-2026-0142", ip: "Ramat Gan, IL", result: "OK" },
-  { t: "18 Jul 2026 09:12:40", actor: "Sam Okafor", role: "admin", action: "Exported", object: "Consent records (France)", ip: "Cardiff, UK", result: "OK" },
-  { t: "18 Jul 2026 08:30:15", actor: "Dr. Amara Chen", role: "referring", action: "Sent message", object: "Case LM-2026-0142", ip: "London, UK", result: "OK" },
-  { t: "17 Jul 2026 16:22:03", actor: "Unknown", role: "—", action: "Access denied (403)", object: "Case LM-2026-0139", ip: "Unknown", result: "DENIED" },
-  { t: "17 Jul 2026 14:19:55", actor: "Dr. Amara Chen", role: "referring", action: "Captured consent", object: "Consent v2 · LM-2026-0142", ip: "London, UK", result: "OK" },
-];
+// 9E · Audit log viewer (#57) — acceptance §14.9.
+//
+// Everything on this page is read from the `audit_log` table, which is written
+// by triggers and blocked from UPDATE/DELETE at the database. Nothing here is
+// illustrative: if the log is empty the page says so, and the chain status
+// reports what was actually verified rather than a decorative tick.
+//
+// Export is gated on `canExportAudit` (Vol III §0.4).
+
+// Newest slice loaded per visit; the browser filters within it.
+const LIMIT = 200;
 
 export default async function Page() {
+  const [user, page, chain] = await Promise.all([
+    getSessionUser(),
+    getAuditEvents({ limit: LIMIT }),
+    verifyAuditChain(),
+  ]);
+
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-[28px] font-semibold text-ink">Audit log</h1>
-          <p className="mt-1 flex items-center gap-1.5 text-[15px] text-ink-secondary">
-            <Lock aria-hidden className="size-4" />
-            Append-only and tamper-evident — every case is reconstructable from
-            this alone.
-          </p>
-        </div>
-        <Button variant="secondary" size="sm">
-          <Download aria-hidden className="size-4" /> Export (CSV / JSON)
-        </Button>
+      <div>
+        <h1 className="text-[28px] font-semibold text-ink">Audit log</h1>
+        <p className="mt-1 flex items-center gap-1.5 text-[15px] text-ink-secondary">
+          <Lock aria-hidden className="size-4" />
+          Append-only and tamper-evident — every case is reconstructable from
+          this alone.
+        </p>
       </div>
 
+      {/* Chain status. Stated as what was checked ("N links verified"), because
+          a bare "verified ✓" on a log with nothing in it is a claim about
+          evidence that does not exist. */}
+      {chain.rows > 0 && (
+        <div
+          className={`flex items-start gap-2.5 rounded-card border p-3.5 text-[13px] ${
+            chain.intact
+              ? "border-line bg-subtle text-ink-secondary"
+              : "border-danger-text/30 bg-danger-bg text-danger-text"
+          }`}
+        >
+          {chain.intact ? (
+            <ShieldCheck aria-hidden className="mt-px size-4 shrink-0" />
+          ) : (
+            <ShieldAlert aria-hidden className="mt-px size-4 shrink-0" />
+          )}
+          <span>
+            {chain.unhashed ? (
+              <>
+                {chain.rows} entries recorded. Hash chaining is not active on this
+                database — apply the schema triggers to make the log
+                tamper-evident.
+              </>
+            ) : chain.intact ? (
+              <>
+                Hash chain intact — {chain.links} {chain.links === 1 ? "link" : "links"} verified
+                across {chain.rows} {chain.rows === 1 ? "entry" : "entries"}. Each entry carries the
+                hash of the one before it, so a removed or altered row breaks the chain.
+              </>
+            ) : (
+              <>
+                Hash chain broken across {chain.rows} entries. An entry has been
+                altered or removed at the database level — investigate before
+                relying on this log as evidence.
+              </>
+            )}
+          </span>
+        </div>
+      )}
+
       <Card>
-        {/* Toolbar */}
-        <div className="mb-4 flex flex-wrap items-center gap-3">
-          <SearchInput placeholder="Search actor, object, case ref" className="max-w-xs flex-1" />
-          <Select defaultValue="" className="h-11 w-auto min-w-36">
-            <option value="">All actions</option>
-            <option>View</option>
-            <option>Download</option>
-            <option>Export</option>
-            <option>Consent</option>
-            <option>Access denied</option>
-          </Select>
-          <Select defaultValue="" className="h-11 w-auto min-w-36">
-            <option value="">All corridors</option>
-            <option>Israel</option>
-            <option>France</option>
-            <option>Turkey</option>
-            <option>Switzerland</option>
-          </Select>
-          <Button variant="secondary" size="sm">
-            <Search aria-hidden className="size-4" /> Last 7 days
-          </Button>
-        </div>
-
-        <ResponsiveTable
-          columns={[
-            { key: "t", label: "Timestamp" },
-            { key: "actor", label: "Actor" },
-            { key: "action", label: "Action" },
-            { key: "object", label: "Object" },
-            { key: "ip", label: "From" },
-            { key: "result", label: "Result" },
-          ]}
-          rows={EVENTS.map((e, i) => ({
-            id: `${e.t}-${i}`,
-            cells: {
-              t: <span className="font-mono text-xs">{e.t}</span>,
-              actor: (
-                <span>
-                  {e.actor}
-                  <span className="block text-xs text-ink-muted">{e.role}</span>
-                </span>
-              ),
-              action: e.action,
-              object: <span className="text-ink-secondary">{e.object}</span>,
-              ip: e.ip,
-              result:
-                e.result === "DENIED" ? (
-                  <Chip size="sm" className="bg-danger-bg text-danger-text">Denied</Chip>
-                ) : (
-                  <Chip size="sm" className="bg-success-bg text-success-text">OK</Chip>
-                ),
-            },
-          }))}
+        <AuditBrowser
+          events={page.events}
+          total={page.total}
+          canExport={Boolean(user?.canExportAudit)}
+          csv={auditCsv(page.events)}
         />
-
-        <div className="mt-4 flex items-center justify-between">
-          <p className="text-xs text-ink-muted">
-            Showing 6 of 12,480 events · hash-chain verified ✓
-          </p>
-          <Button variant="secondary" size="sm">
-            Load more
-          </Button>
-        </div>
       </Card>
     </div>
   );

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth";
-import { appendAudit } from "@/lib/db/referrals";
+import { appendAudit, canWriteCase } from "@/lib/db/referrals";
 import { updateReferralStatus } from "@/lib/db/write";
 import {
   answerInfoRequest,
@@ -59,6 +59,10 @@ export async function saveTreatmentPlanAction(
   const send = String(formData.get("intent") || "draft") === "send";
   const proposedCare = String(formData.get("proposedCare") || "").trim();
   if (!ref) return { error: "Case not found." };
+  // The role check above says WHAT you may do; this says WHICH cases you may do
+  // it to. Without it a receiving clinician could write a plan onto another
+  // hospital's referral by posting its reference.
+  if (!(await canWriteCase(ref, user))) return { error: "Case not found." };
   if (send && proposedCare.length < 10) {
     return { error: "Describe the proposed treatment before sending (at least 10 characters)." };
   }
@@ -125,6 +129,7 @@ export async function saveClinicalSummaryAction(
   const send = String(formData.get("intent") || "draft") === "send";
   const treatmentPerformed = String(formData.get("treatmentPerformed") || "").trim();
   if (!ref) return { error: "Case not found." };
+  if (!(await canWriteCase(ref, user))) return { error: "Case not found." };
   if (send && treatmentPerformed.length < 10) {
     return { error: "Describe the treatment performed before returning the summary." };
   }
@@ -172,6 +177,9 @@ export async function requestInfoAction(
   const items = formData.getAll("items").map(String).filter(Boolean);
   const note = String(formData.get("note") || "").trim();
   if (!ref) return { error: "Case not found." };
+  // This action had no case check at all: any signed-in account could post a
+  // request onto any referral it knew the reference of.
+  if (!(await canWriteCase(ref, user))) return { error: "Case not found." };
   if (items.length === 0 && !note) {
     return { error: "Choose what you need, or write a note." };
   }
@@ -205,6 +213,7 @@ export async function answerInfoRequestAction(
   const requestId = String(formData.get("requestId") || "");
   const answer = String(formData.get("answer") || "").trim();
   if (!requestId || !answer) return { error: "Write a response before sending." };
+  if (!ref || !(await canWriteCase(ref, user))) return { error: "Case not found." };
 
   try {
     await answerInfoRequest(requestId, answer, user.profileId);

@@ -275,6 +275,8 @@ export const DEMO_HOSPITALS: DemoHospital[] = [
   },
 ];
 
-export function getDemoHospital(id: string): DemoHospital {
-  return DEMO_HOSPITALS.find((h) => h.id === id) ?? DEMO_HOSPITALS[0];
+export function getDemoHospital(id: string): DemoHospital | undefined {
+  // Undefined rather than the first hospital: silently substituting a
+  // different partner is worse than a 404.
+  return DEMO_HOSPITALS.find((h) => h.id === id);
 }

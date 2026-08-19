@@ -234,12 +234,33 @@ export async function getPatientCase(user?: SessionProfile | null): Promise<Demo
   }
 }
 
-/** True when the session may act on this case (guards write actions). */
+/** True when the session may SEE this case. Read access — not permission to write. */
 export async function canAccessCase(
   ref: string,
   user?: SessionProfile | null,
 ): Promise<boolean> {
   return (await getCase(ref, user)) !== null;
+}
+
+/**
+ * True when the session may CHANGE this case.
+ *
+ * Read access is not write access. A patient's scope resolves to their own
+ * referral, so `canAccessCase` is true for them — which is right for viewing
+ * and wrong for every mutation. Guarding writes with it alone made the portal's
+ * "read-only" promise a matter of which buttons we happened to render: a
+ * patient posting a server action directly could send a message into the
+ * clinical thread, upload a document, or move the case's status.
+ *
+ * Every write action on a case must use this, not `canAccessCase`.
+ */
+export async function canWriteCase(
+  ref: string,
+  user?: SessionProfile | null,
+): Promise<boolean> {
+  const u = await resolveUser(user);
+  if (!u || u.accountType !== "clinician") return false;
+  return canAccessCase(ref, u);
 }
 
 interface ComplianceRow {

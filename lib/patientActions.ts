@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { supabaseServer } from "@/lib/supabase/server";
-import { appendAudit } from "@/lib/db/referrals";
+import { appendAudit, canAccessCase } from "@/lib/db/referrals";
 import {
   createPatientInvite,
   lookupInvite,
@@ -33,8 +33,13 @@ export async function invitePatientAction(
 ): Promise<InviteState> {
   const user = await getSessionUser();
   if (!user) return { error: "Your session has expired — please sign in again." };
-  if (user.role !== "referring" && user.role !== "admin") {
-    return { error: "Only the referring clinician can invite the patient." };
+  // Treating clinician only. Admins were allowed here as a support escape
+  // hatch; they are not now. Portal access hands someone sight of a clinical
+  // record, and the person who authorises that should be the one with the
+  // clinical relationship and the consent — not a compliance account. It also
+  // keeps the case's audit entry honest about who granted the access.
+  if (user.role !== "referring") {
+    return { error: "Only the referring clinician on this case can invite the patient." };
   }
 
   const ref = String(formData.get("ref") || "");
@@ -42,6 +47,10 @@ export async function invitePatientAction(
   const email = String(formData.get("email") || "").trim().toLowerCase();
   if (!ref) return { error: "Case not found." };
   if (!email.includes("@")) return { error: "Enter the patient's email address." };
+  // Being A referring clinician was the only check; it did not establish this
+  // was YOUR case. Without this, any referring account could issue portal
+  // access to a stranger's referral by posting its reference.
+  if (!(await canAccessCase(ref, user))) return { error: "Case not found." };
 
   try {
     const token = await createPatientInvite(ref, email, user.profileId);

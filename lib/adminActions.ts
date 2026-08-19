@@ -1,9 +1,16 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { appendAdminAudit, updateHospital } from "@/lib/db/write";
+import {
+  appendAdminAudit,
+  deleteHospital,
+  insertHospital,
+  uniqueHospitalId,
+  updateHospital,
+} from "@/lib/db/write";
 import { sendEmail, siteUrl } from "@/lib/email";
 import {
   deleteCorridor,
@@ -19,6 +26,42 @@ import type { Role } from "@/lib/rbac";
 // (never trust the client) and writes an admin audit entry.
 
 const CLINICIAN_ROLES: Role[] = ["referring", "receiving", "coordinator", "caseManager", "admin"];
+
+/** "English, Hebrew , Arabic" → ["English", "Hebrew", "Arabic"]. */
+function splitList(value: string): string[] {
+  return value
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+/**
+ * Zip two parallel field arrays (the repeated rows of a form) into pairs,
+ * keeping only rows whose first field was filled in — a blank row is one the
+ * admin added and left empty, not an accreditation body called "".
+ */
+function zipRows(
+  first: FormDataEntryValue[],
+  second: FormDataEntryValue[],
+): { a: string; b: string }[] {
+  return first
+    .map((v, i) => ({ a: String(v).trim(), b: String(second[i] ?? "").trim() }))
+    .filter((r) => r.a);
+}
+
+function parseAccreditation(
+  names: FormDataEntryValue[],
+  expires: FormDataEntryValue[],
+): { name: string; expires: string }[] {
+  return zipRows(names, expires).map((r) => ({ name: r.a, expires: r.b }));
+}
+
+function parseClinicians(
+  names: FormDataEntryValue[],
+  roles: FormDataEntryValue[],
+): { name: string; role: string }[] {
+  return zipRows(names, roles).map((r) => ({ name: r.a, role: r.b }));
+}
 
 export type InviteState = {
   error?: string;
@@ -51,6 +94,18 @@ export async function inviteUserAction(_prev: InviteState, formData: FormData): 
   const locale = String(formData.get("locale") || "en");
 
   if (!name || !email || !role) return { error: "Name, email, and role are required." };
+
+  // Refused here, not just hidden in the form's dropdown. A patient account is
+  // only meaningful bound to one referral (profiles.patient_referral_id), and
+  // nothing on this screen supplies one — the account would open an empty
+  // portal that no clinician can claim. The referring clinician issues portal
+  // access from the case: lib/patientActions.ts → invitePatientAction.
+  if (role === "patient") {
+    return {
+      error:
+        "Patients are invited from their case by the referring clinician, so the account is bound to that referral.",
+    };
+  }
 
   const password = generatePassword();
   const sb = supabaseAdmin();
@@ -353,7 +408,50 @@ export async function updateCorridorAction(formData: FormData): Promise<void> {
   }
 }
 
-/** Update a partner hospital (identity + publish + specialties). */
+/** Pages that must be rebuilt when a hospital record changes. */
+function revalidateHospital(locale: string, id: string): void {
+  revalidatePath(`/${locale}/admin/hospitals`);
+  revalidatePath(`/${locale}/admin/hospitals/${id}`);
+  revalidatePath(`/${locale}/admin/hospitals/${id}/edit`);
+  // The public directory and profile are statically rendered, so without these
+  // a publish toggle would change the database and nothing else.
+  revalidatePath(`/${locale}/hospitals`);
+  revalidatePath(`/${locale}/hospitals/${id}`);
+  revalidatePath(`/${locale}/corridors`);
+}
+
+/**
+ * Show or hide one hospital on the public site.
+ *
+ * The list page's toggle used to be a bare checkbox with no action behind it:
+ * it moved, the row looked published, and the public directory never changed.
+ * This is the same write the edit form performs, reachable in one click.
+ */
+export async function setHospitalPublishedAction(formData: FormData): Promise<void> {
+  const admin = await getSessionUser();
+  if (!admin || !admin.canManageUsers) return;
+
+  const id = String(formData.get("hospitalId") || "");
+  const locale = String(formData.get("locale") || "en");
+  const published = String(formData.get("published") || "") === "true";
+  if (!id) return;
+
+  try {
+    const ok = await updateHospital(id, { published });
+    if (ok) {
+      await appendAdminAudit(
+        admin.name,
+        "Hospital updated",
+        `${String(formData.get("name") || id)} · ${published ? "published" : "hidden"}`,
+      );
+      revalidateHospital(locale, id);
+    }
+  } catch (e) {
+    console.warn("[action] setHospitalPublished failed:", (e as Error)?.message);
+  }
+}
+
+/** Update a partner hospital (identity, publish, specialties, accreditation…). */
 export async function updateHospitalAction(formData: FormData): Promise<void> {
   const admin = await getSessionUser();
   if (!admin || !admin.canManageUsers) return;
@@ -368,6 +466,10 @@ export async function updateHospitalAction(formData: FormData): Promise<void> {
     country: String(formData.get("country") || "").trim(),
     published: formData.get("published") === "on",
     specialties: formData.getAll("specialties").map(String),
+    intro: String(formData.get("intro") || "").trim(),
+    languages: splitList(String(formData.get("languages") || "")),
+    accreditation: parseAccreditation(formData.getAll("accreditationName"), formData.getAll("accreditationExpires")),
+    clinicians: parseClinicians(formData.getAll("clinicianName"), formData.getAll("clinicianRole")),
   };
 
   try {
@@ -378,15 +480,70 @@ export async function updateHospitalAction(formData: FormData): Promise<void> {
         "Hospital updated",
         `${patch.name} · ${patch.published ? "published" : "hidden"}`,
       );
-      revalidatePath(`/${locale}/admin/hospitals`);
-      revalidatePath(`/${locale}/admin/hospitals/${id}`);
-      revalidatePath(`/${locale}/admin/hospitals/${id}/edit`);
-      revalidatePath(`/${locale}/hospitals`);
-      revalidatePath(`/${locale}/hospitals/${id}`);
+      revalidateHospital(locale, id);
     }
   } catch (e) {
     console.warn("[action] updateHospital failed:", (e as Error)?.message);
   }
+}
+
+/**
+ * Create a partner hospital.
+ *
+ * The id is a slug derived from the name because the table's primary key is
+ * text ('sheba'), and it is what every URL and corridor reference uses.
+ */
+export async function createHospitalAction(formData: FormData): Promise<void> {
+  const admin = await getSessionUser();
+  if (!admin || !admin.canManageUsers) return;
+
+  const locale = String(formData.get("locale") || "en");
+  const name = String(formData.get("name") || "").trim();
+  if (!name) return;
+
+  const id = await uniqueHospitalId(slugify(name) || "hospital");
+  const record = {
+    id,
+    name,
+    city: String(formData.get("city") || "").trim(),
+    country: String(formData.get("country") || "").trim(),
+    corridorId: String(formData.get("corridorId") || "") || null,
+    published: formData.get("published") === "on",
+    intro: String(formData.get("intro") || "").trim(),
+    specialties: formData.getAll("specialties").map(String),
+    languages: splitList(String(formData.get("languages") || "")),
+    accreditation: parseAccreditation(formData.getAll("accreditationName"), formData.getAll("accreditationExpires")),
+    clinicians: parseClinicians(formData.getAll("clinicianName"), formData.getAll("clinicianRole")),
+  };
+
+  try {
+    await insertHospital(record);
+    await appendAdminAudit(admin.name, "Hospital created", `${name} (${id})`);
+    revalidateHospital(locale, id);
+  } catch (e) {
+    console.warn("[action] createHospital failed:", (e as Error)?.message);
+    return;
+  }
+  redirect(`/${locale}/admin/hospitals/${id}/edit`);
+}
+
+/** Remove a partner hospital. Refused while any case references it. */
+export async function deleteHospitalAction(formData: FormData): Promise<void> {
+  const admin = await getSessionUser();
+  if (!admin || !admin.canManageUsers) return;
+
+  const id = String(formData.get("hospitalId") || "");
+  const locale = String(formData.get("locale") || "en");
+  if (!id) return;
+
+  const result = await deleteHospital(id);
+  if (result.ok) {
+    await appendAdminAudit(admin.name, "Hospital deleted", id);
+    revalidateHospital(locale, id);
+    redirect(`/${locale}/admin/hospitals`);
+  }
+  // Refused (cases still reference it) — the edit page re-reads and says so.
+  revalidatePath(`/${locale}/admin/hospitals/${id}/edit`);
 }
 
 /**
@@ -460,5 +617,57 @@ export async function decideRegistrationAction(formData: FormData): Promise<void
     revalidatePath(`/${locale}/admin/users`);
   } catch (e) {
     console.warn("[action] decideRegistration failed:", (e as Error)?.message);
+  }
+}
+
+/**
+ * Change a user's role and hospital posting.
+ *
+ * Both were settable only at invite time, which left no way to correct them —
+ * and a receiving clinician's hospital is what their entire queue is scoped by
+ * (lib/db/scope.ts). A receiving account with no hospital sees nothing at all,
+ * and a hospital with no receiving account swallows referrals: the case is
+ * submitted and nobody can open it.
+ */
+export async function updateUserAssignmentAction(formData: FormData): Promise<void> {
+  const admin = await getSessionUser();
+  if (!admin || !admin.canManageUsers) return;
+
+  const profileId = String(formData.get("profileId") || "");
+  const locale = String(formData.get("locale") || "en");
+  const role = String(formData.get("role") || "");
+  const hospitalId = String(formData.get("hospitalId") || "");
+  if (!profileId || !CLINICIAN_ROLES.includes(role as Role)) return;
+
+  // A hospital posting only means something for the roles scoped by one.
+  const needsHospital = role === "receiving" || role === "coordinator";
+
+  try {
+    const { data, error } = await supabaseAdmin()
+      .from("profiles")
+      .update({
+        clinician_role: role,
+        hospital_id: needsHospital ? hospitalId || null : null,
+        // Permissions follow the role, so a demotion cannot leave admin rights
+        // behind on the account.
+        can_manage_users: role === "admin",
+        can_export_audit: role === "admin" || role === "caseManager",
+        can_edit_corridors: role === "admin",
+      })
+      .eq("id", profileId)
+      .select("name")
+      .maybeSingle();
+    if (error) throw error;
+    if (data) {
+      await appendAdminAudit(
+        admin.name,
+        "User role updated",
+        `${(data as { name: string }).name} · ${role}${needsHospital && hospitalId ? ` @ ${hospitalId}` : ""}`,
+      );
+      revalidatePath(`/${locale}/admin/users`);
+      revalidatePath(`/${locale}/receiving`);
+    }
+  } catch (e) {
+    console.warn("[action] updateUserAssignment failed:", (e as Error)?.message);
   }
 }

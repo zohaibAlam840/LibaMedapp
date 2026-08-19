@@ -97,7 +97,9 @@ export default async function Page() {
         <Card>
           <CardTitle className="mb-2">What you agreed to</CardTitle>
           <p className="mb-3 text-[13px] text-ink-secondary">
-            Consent v{record.patientConsent.version} · captured {record.patientConsent.capturedAt}
+            {/* No "v" prefix here: the stored version already carries one
+                (lib/intake.ts → "v2026-07"), which rendered as "vv2026-07". */}
+            Consent {record.patientConsent.version} · captured {record.patientConsent.capturedAt}
           </p>
           <ul className="flex flex-col gap-2">
             {record.patientConsent.items.map((item) => (

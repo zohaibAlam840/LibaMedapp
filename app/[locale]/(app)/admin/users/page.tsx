@@ -4,10 +4,10 @@ import Avatar from "@/components/ui/Avatar";
 import Chip from "@/components/ui/Chip";
 import ResponsiveTable from "@/components/ui/ResponsiveTable";
 import InviteUserForm from "@/components/admin/InviteUserForm";
+import UserAssignmentForm from "@/components/admin/UserAssignmentForm";
 import { ROLE_LABEL } from "@/lib/rbac";
 import { getUsers } from "@/lib/db/users";
 import { getHospitals } from "@/lib/db/hospitals";
-import { formatDate } from "@/lib/db/format";
 
 // 9E · User & role management (#56). Gated on `canManageUsers` (Vol III §0.4).
 // Only referring clinicians self-register; every other role is invited here —
@@ -25,6 +25,24 @@ const TYPE_LABEL: Record<string, string> = {
   introducer: "Introducer",
   patient: "Patient",
 };
+
+// A receiving clinician or coordinator with no hospital has an empty queue —
+// their scope resolves to nothing — so the gap is called out in the cell
+// rather than left as a quiet blank.
+function hospitalName(
+  u: { accountType: string; role: string | null; hospitalId: string },
+  hospitals: { id: string; name: string }[],
+) {
+  if (u.accountType !== "clinician") return <span className="text-ink-muted">—</span>;
+  if (u.role !== "receiving" && u.role !== "coordinator") {
+    return <span className="text-ink-muted">Not hospital-scoped</span>;
+  }
+  const match = hospitals.find((h) => h.id === u.hospitalId);
+  if (!match) {
+    return <span className="font-medium text-danger-text">Not posted — sees no cases</span>;
+  }
+  return match.name;
+}
 
 export default async function Page({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -55,8 +73,9 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
               { key: "name", label: "User" },
               { key: "role", label: "Role" },
               { key: "org", label: "Organisation" },
+              { key: "posting", label: "Hospital" },
               { key: "status", label: "Status" },
-              { key: "created", label: "Created" },
+              { key: "assign", label: "Role & posting" },
             ]}
             rows={users.map((u) => {
               const roleKey = u.role ?? u.accountType;
@@ -81,6 +100,19 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
                     </Chip>
                   ),
                   org: u.org || "—",
+                  posting: hospitalName(u, hospitals),
+                  assign:
+                    u.accountType === "clinician" ? (
+                      <UserAssignmentForm
+                        locale={locale}
+                        profileId={u.id}
+                        role={u.role}
+                        hospitalId={u.hospitalId}
+                        hospitals={hospitals.map((h) => ({ id: h.id, name: h.name }))}
+                      />
+                    ) : (
+                      <span className="text-[13px] text-ink-muted">—</span>
+                    ),
                   status:
                     u.status === "verified" ? (
                       <span className="inline-flex items-center gap-1 text-[13px] text-success-text">
@@ -91,7 +123,6 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
                     ) : (
                       <span className="text-[13px] text-danger-text">Declined</span>
                     ),
-                  created: formatDate(u.createdAt),
                 },
               };
             })}

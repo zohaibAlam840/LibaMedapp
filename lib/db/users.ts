@@ -19,6 +19,8 @@ export interface AdminUser {
   org: string;
   status: "pending" | "verified" | "declined";
   createdAt: string;
+  /** Hospital the receiving clinician/coordinator is posted to; "" if unset. */
+  hospitalId: string;
 }
 
 interface Row {
@@ -30,6 +32,7 @@ interface Row {
   company: string | null;
   account_status: "pending" | "verified" | "declined";
   created_at: string;
+  hospital_id: string | null;
 }
 
 export async function getUsers(): Promise<AdminUser[]> {
@@ -37,7 +40,7 @@ export async function getUsers(): Promise<AdminUser[]> {
   try {
     const { data, error } = await supabaseAdmin()
       .from("profiles")
-      .select("id, name, email, account_type, clinician_role, company, account_status, created_at")
+      .select("id, name, email, account_type, clinician_role, company, account_status, created_at, hospital_id")
       .order("created_at", { ascending: false });
     if (error) throw error;
     return ((data as unknown as Row[]) ?? []).map((r) => ({
@@ -49,6 +52,7 @@ export async function getUsers(): Promise<AdminUser[]> {
       org: r.company ?? "",
       status: r.account_status,
       createdAt: r.created_at,
+      hospitalId: r.hospital_id ?? "",
     }));
   } catch (e) {
     console.warn("[db] getUsers failed:", (e as Error)?.message);

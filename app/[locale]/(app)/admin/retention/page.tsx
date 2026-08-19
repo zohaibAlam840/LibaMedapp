@@ -71,10 +71,19 @@ export default async function Page({
         )}
       </Card>
 
-      {/* Records due for deletion */}
+      {/* Retention schedule. The card lists EVERY case with a deletion date,
+          not only the ones that have reached it, so the heading says schedule
+          and calls out how many are actually due — titled "Records due for
+          deletion" it read as an action list while showing cases with ten
+          years left. */}
       <Card>
         <CardTitle>
-          Records due for deletion{dueForDeletion.length > 0 ? ` · ${dueForDeletion.length}` : ""}
+          Retention schedule
+          {dueForDeletion.length > 0
+            ? ` · ${dueForDeletion.length} due now`
+            : schedule.length > 0
+              ? ` · ${schedule.length} scheduled, none due`
+              : ""}
         </CardTitle>
         {schedule.length === 0 ? (
           <EmptyState

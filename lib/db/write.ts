@@ -127,20 +127,31 @@ export async function insertReferral(r: NewReferral): Promise<string> {
 
   // Start the retention clock from the corridor's own period (France 20 years,
   // most others 10) so the deletion schedule is right from day one.
+  //
+  // Both columns arrive with migration 004. Until it is applied `corridors` has
+  // no `retention_years` and `referrals` has no `retention_until`, so we have to
+  // detect that and leave the column OUT of the insert entirely — sending it
+  // anyway is rejected by PostgREST ("Could not find the 'retention_until'
+  // column of 'referrals' in the schema cache") and the referral fails outright.
+  //
+  // The error is READ rather than caught: supabase-js resolves with
+  // { data, error } instead of throwing, so a try/catch here never fires — which
+  // is exactly how the missing column used to reach the insert.
   let retentionUntil: string | null = null;
-  try {
-    const { data } = await sb
-      .from("corridors")
-      .select("retention_years")
-      .eq("id", r.corridorId)
-      .maybeSingle();
-    const years = (data as { retention_years?: number } | null)?.retention_years ?? 10;
+  const { data: corridor, error: retentionErr } = await sb
+    .from("corridors")
+    .select("retention_years")
+    .eq("id", r.corridorId)
+    .maybeSingle();
+  if (retentionErr) {
+    console.warn(
+      "[db] insertReferral: retention_years unavailable — apply migration 004. Referral stored without a retention date.",
+    );
+  } else {
+    const years = (corridor as { retention_years?: number } | null)?.retention_years ?? 10;
     const d = new Date();
     d.setUTCFullYear(d.getUTCFullYear() + years);
     retentionUntil = d.toISOString().slice(0, 10);
-  } catch {
-    // Column arrives with migration 004 — a missing date just means it gets
-    // backfilled later, never a failed referral.
   }
   const { data, error } = await sb
     .from("referrals")
@@ -209,6 +220,10 @@ export interface HospitalPatch {
   country?: string;
   published?: boolean;
   specialties?: string[];
+  intro?: string;
+  languages?: string[];
+  accreditation?: { name: string; expires: string }[];
+  clinicians?: { name: string; role: string }[];
 }
 
 /** Update a partner hospital's editable fields. */
@@ -221,6 +236,52 @@ export async function updateHospital(id: string, patch: HospitalPatch): Promise<
     .maybeSingle();
   if (error) throw error;
   return Boolean(data);
+}
+
+export interface NewHospital extends HospitalPatch {
+  id: string;
+  name: string;
+  corridorId?: string | null;
+}
+
+/** `slug`, or `slug-2`, `slug-3`… when the id is taken. */
+export async function uniqueHospitalId(slug: string): Promise<string> {
+  const sb = supabaseAdmin();
+  for (let n = 1; n < 50; n++) {
+    const candidate = n === 1 ? slug : `${slug}-${n}`;
+    const { data } = await sb.from("hospitals").select("id").eq("id", candidate).maybeSingle();
+    if (!data) return candidate;
+  }
+  return `${slug}-${Date.now()}`;
+}
+
+export async function insertHospital(h: NewHospital): Promise<void> {
+  const { corridorId, ...rest } = h;
+  const { error } = await supabaseAdmin()
+    .from("hospitals")
+    .insert({ ...rest, corridor_id: corridorId ?? null });
+  if (error) throw error;
+}
+
+/**
+ * Delete a partner hospital.
+ *
+ * Refused while a referral still points at it: the case's own record of where
+ * it was sent must not be broken to tidy up a directory. Unpublishing is the
+ * right move there, and the caller says so.
+ */
+export async function deleteHospital(id: string): Promise<{ ok: boolean; reason?: string }> {
+  const sb = supabaseAdmin();
+  const { count } = await sb
+    .from("referrals")
+    .select("*", { count: "exact", head: true })
+    .eq("hospital_id", id);
+  if ((count ?? 0) > 0) {
+    return { ok: false, reason: `${count} case(s) reference this hospital — unpublish it instead.` };
+  }
+  const { error } = await sb.from("hospitals").delete().eq("id", id);
+  if (error) throw error;
+  return { ok: true };
 }
 
 /** Attach a document row to a referral. */

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getSessionUser } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { appendAudit, canAccessCase } from "@/lib/db/referrals";
+import { appendAudit, canAccessCase, canWriteCase } from "@/lib/db/referrals";
 import {
   DOCUMENTS_BUCKET,
   insertDocument,
@@ -43,8 +43,9 @@ export async function sendMessageAction(
   const side = String(formData.get("side") || "referring");
   const body = String(formData.get("body") || "").trim();
   if (!ref || !body) return { error: "Write a message before sending." };
-  // The ref comes from the client — confirm this session may act on that case.
-  if (!(await canAccessCase(ref, user))) return { error: "Case not found." };
+  // The ref comes from the client — confirm this session may WRITE that case.
+  // canWriteCase, not canAccessCase: a patient can see their own referral.
+  if (!(await canWriteCase(ref, user))) return { error: "Case not found." };
 
   try {
     const ok = await insertMessage(ref, {
@@ -77,7 +78,7 @@ export async function advanceStatusAction(formData: FormData): Promise<void> {
   const status = String(formData.get("status") || "") as CaseStatus;
   const event = String(formData.get("event") || `Status → ${CASE_STATUS_LABELS[status] ?? status}`);
   if (!ref || !status) return;
-  if (!(await canAccessCase(ref, user))) return;
+  if (!(await canWriteCase(ref, user))) return;
 
   try {
     const ok = await updateReferralStatus(ref, status);
@@ -99,7 +100,9 @@ export async function withdrawConsentAction(formData: FormData): Promise<void> {
   const locale = String(formData.get("locale") || "en");
   const side = String(formData.get("side") || "referring");
   if (!ref) return;
-  if (!(await canAccessCase(ref, user))) return;
+  // Clinician-only: the portal tells the patient to contact their GP to
+  // withdraw, and withdrawal halts processing on a live clinical case.
+  if (!(await canWriteCase(ref, user))) return;
 
   try {
     const ok = await withdrawConsent(ref);
@@ -139,7 +142,7 @@ export async function uploadDocumentAction(
   if (!ref) return { error: "Case not found." };
   if (!(file instanceof File) || file.size === 0) return { error: "Choose a file to upload." };
   if (file.size > 50 * 1024 * 1024) return { error: "File is too large (50 MB max)." };
-  if (!(await canAccessCase(ref, user))) return { error: "Case not found." };
+  if (!(await canWriteCase(ref, user))) return { error: "Case not found." };
 
   try {
     const id = await referralIdFromRef(ref);
@@ -220,6 +223,8 @@ export async function documentDownloadUrl(
 ): Promise<string | null> {
   const user = await getSessionUser();
   if (!user || !storagePath) return null;
+  // canAccessCase is deliberate here: downloading is reading, and the portal
+  // shows the patient their own documents. The access is audited below.
   if (!(await canAccessCase(ref, user))) return null;
   try {
     const { data, error } = await supabaseAdmin()

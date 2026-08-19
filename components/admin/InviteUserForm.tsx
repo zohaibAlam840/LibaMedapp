@@ -7,6 +7,17 @@ import Button from "@/components/ui/Button";
 import { Field, Input, Select } from "@/components/ui/Field";
 import { inviteUserAction, type InviteState } from "@/lib/adminActions";
 
+// Staff roles only.
+//
+// "Patient (read-only)" used to be offered here and it could not work: a
+// patient account is meaningless until it is bound to ONE referral, and an
+// admin issuing an account from the user list has no case in front of them to
+// bind it to. The result was a real login that opened an empty portal reading
+// "no referral linked yet", with nobody able to say which case it was for.
+//
+// Patients are invited by their referring clinician from the case itself
+// (components/case/InvitePatientCard), which is where the referral, and the
+// clinical relationship that justifies the access, actually exist.
 const ROLES = [
   { value: "receiving", label: "Receiving clinician" },
   { value: "coordinator", label: "Hospital coordinator" },
@@ -14,7 +25,6 @@ const ROLES = [
   { value: "admin", label: "Compliance / admin" },
   { value: "referring", label: "Referring clinician" },
   { value: "introducer", label: "Introducer" },
-  { value: "patient", label: "Patient (read-only)" },
 ];
 
 const NEEDS_HOSPITAL = new Set(["receiving", "coordinator"]);
@@ -142,6 +152,12 @@ export default function InviteUserForm({
             {state.error}
           </p>
         )}
+
+        <p className="text-[13px] text-ink-muted">
+          Patients aren&rsquo;t invited from here — their referring clinician
+          issues portal access from the case, so the account is bound to that
+          one referral.
+        </p>
 
         <div className="flex items-center justify-between gap-3">
           <p className="text-[13px] text-ink-muted">A one-time password is generated and shown once.</p>

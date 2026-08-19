@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { BadgeCheck, Globe2, Languages, MapPin } from "lucide-react";
 import { Card, CardTitle, SectionLabel } from "@/components/ui/Card";
 import Avatar from "@/components/ui/Avatar";
@@ -18,6 +19,7 @@ export default async function Page({
 }) {
   const { locale, hospitalId } = await params;
   const h = await getHospital(hospitalId);
+  if (!h) notFound();
   // Admin-approved doctors (migration 002); falls back to the hospital record's
   // own clinician list when the directory hasn't been populated yet.
   const doctors = await getHospitalDoctors(hospitalId);

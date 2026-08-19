@@ -43,6 +43,12 @@ function mapHospital(r: HospitalRow): DemoHospital {
   };
 }
 
+// The demo constants stand in ONLY when Supabase is not configured at all —
+// local preview and the marketing build before any keys exist. Once the
+// platform is configured they are never substituted: a query error means the
+// directory is unknown, and answering "unknown" with four plausible partner
+// hospitals (accreditation dates and named clinicians included) would put
+// fiction in front of a clinician choosing where to send a patient.
 export async function getHospitals(): Promise<DemoHospital[]> {
   if (!configured()) return DEMO_HOSPITALS;
   try {
@@ -50,13 +56,14 @@ export async function getHospitals(): Promise<DemoHospital[]> {
     if (error) throw error;
     return ((data as unknown as HospitalRow[]) ?? []).map(mapHospital);
   } catch (e) {
-    console.warn("[db] getHospitals → demo fallback:", (e as Error)?.message);
-    return DEMO_HOSPITALS;
+    console.warn("[db] getHospitals failed:", (e as Error)?.message);
+    return [];
   }
 }
 
-export async function getHospital(id: string): Promise<DemoHospital> {
-  if (!configured()) return getDemoHospital(id);
+/** Null when the hospital is unknown — callers render notFound(). */
+export async function getHospital(id: string): Promise<DemoHospital | null> {
+  if (!configured()) return getDemoHospital(id) ?? null;
   try {
     const { data, error } = await supabaseAdmin()
       .from("hospitals")
@@ -64,10 +71,10 @@ export async function getHospital(id: string): Promise<DemoHospital> {
       .eq("id", id)
       .maybeSingle();
     if (error) throw error;
-    if (!data) return getDemoHospital(id);
+    if (!data) return null;
     return mapHospital(data as unknown as HospitalRow);
   } catch (e) {
-    console.warn("[db] getHospital → demo fallback:", (e as Error)?.message);
-    return getDemoHospital(id);
+    console.warn("[db] getHospital failed:", (e as Error)?.message);
+    return null;
   }
 }

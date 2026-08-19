@@ -44,20 +44,31 @@ function CountBadge({ count, floating }: { count: number; floating?: boolean }) 
   );
 }
 
+/** Overlay live per-user counts onto the static nav table. */
+function withBadges(items: NavItem[], badges?: Record<string, number>): NavItem[] {
+  if (!badges) return items;
+  return items.map((item) =>
+    badges[item.href] ? { ...item, badge: badges[item.href] } : item,
+  );
+}
+
 /** Desktop sidebar: collapses between a 256px labelled panel and a 72px rail. */
 export function Sidebar({
   locale,
   role,
   userName,
   defaultCollapsed,
+  badges,
 }: {
   locale: string;
   role: Role;
   /** Real signed-in user's name (falls back to the demo user for previews). */
   userName?: string;
   defaultCollapsed: boolean;
+  /** Live counts keyed by href, computed per user in the app layout. */
+  badges?: Record<string, number>;
 }) {
-  const items = navForRole(role);
+  const items = withBadges(navForRole(role), badges);
   const isActive = useActive(locale);
   const displayName = userName ?? ROLE_LABEL[role];
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
@@ -270,8 +281,16 @@ function UtilLink({
 }
 
 /** Mobile bottom tab bar — 5-cap with a More sheet for the remainder. */
-export function BottomTabs({ locale, role }: { locale: string; role: Role }) {
-  const items = navForRole(role);
+export function BottomTabs({
+  locale,
+  role,
+  badges,
+}: {
+  locale: string;
+  role: Role;
+  badges?: Record<string, number>;
+}) {
+  const items = withBadges(navForRole(role), badges);
   const { tabs, overflow } = mobileTabs(items);
   const isActive = useActive(locale);
   const [moreOpen, setMoreOpen] = useState(false);

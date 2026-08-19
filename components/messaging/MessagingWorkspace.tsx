@@ -13,10 +13,11 @@ import Avatar from "@/components/ui/Avatar";
 import SearchInput from "@/components/ui/SearchInput";
 import ListRow from "@/components/ui/ListRow";
 import StatusChip from "@/components/ui/StatusChip";
-import MessageBubble from "@/components/ui/MessageBubble";
-import Composer from "@/components/ui/Composer";
+import MessageThread from "@/components/messaging/MessageThread";
+import QueryProvider from "@/components/messaging/QueryProvider";
 import DetailPanelRow from "@/components/ui/DetailPanelRow";
 import { getCase, getCases, getDocuments, getMessages } from "@/lib/db/referrals";
+import { getConsentRecords } from "@/lib/db/governance";
 
 /**
  * Secure messaging 3-panel workspace (design spec §3.3): case list | thread |
@@ -37,6 +38,10 @@ export default async function MessagingWorkspace({
 }) {
   const activeCase = await getCase(caseId);
   if (!activeCase) notFound();
+  // Read from the consent record rather than a fixed "Active · v2 wording":
+  // this panel sits beside a live clinical thread, where a withdrawn consent
+  // still showing "Active" would be read as permission to keep going.
+  const consent = (await getConsentRecords()).find((r) => r.caseRef === activeCase.ref);
   const cases = await getCases();
   const messages = await getMessages(caseId);
   const documents = await getDocuments(caseId);
@@ -94,32 +99,17 @@ export default async function MessagingWorkspace({
           <StatusChip status={activeCase.status} className="hidden sm:inline-flex" />
         </div>
 
-        <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
-          <p className="self-center rounded-full bg-subtle px-3 py-1 text-[11px] text-ink-muted">
-            Messages are encrypted and logged to the case audit trail
-          </p>
-          {messages.map((m, i) => (
-            <MessageBubble
-              key={i}
-              // Stored direction is from the referring perspective; flip it for
-              // the receiving side so each clinician sees their own sends right-aligned.
-              direction={
-                side === "referring"
-                  ? m.direction
-                  : m.direction === "outgoing"
-                    ? "incoming"
-                    : "outgoing"
-              }
-              attachment={m.attachment}
-              time={m.time}
-              read={m.read}
-            >
-              {m.text}
-            </MessageBubble>
-          ))}
-        </div>
-
-        <Composer ref={activeCase.ref} locale={locale} side={side} />
+        {/* Thread + composer are a client island: the messages poll so the
+            other clinician's replies arrive without either side reloading.
+            Everything around them stays server-rendered. */}
+        <QueryProvider>
+          <MessageThread
+            caseRef={activeCase.ref}
+            locale={locale}
+            side={side}
+            initialMessages={messages}
+          />
+        </QueryProvider>
       </Card>
 
       {/* Case meta panel */}
@@ -134,7 +124,11 @@ export default async function MessagingWorkspace({
           <DetailPanelRow
             icon={ScrollText}
             label="Consent"
-            value="Active · v2 wording"
+            value={
+              consent
+                ? `${consent.status === "withdrawn" ? "Withdrawn" : "Active"}${consent.version ? ` · ${consent.version}` : ""}`
+                : "Not captured"
+            }
             trailing={
               <Link
                 href={`/${locale}/referring/cases/${activeCase.id}/consent`}

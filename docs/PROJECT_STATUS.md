@@ -94,7 +94,7 @@ re-check permission server-side; the client is never trusted.
 | Case status progression | ✅ Done | Accept → under review → plan received → confirmed → complete → summary returned. Each transition audited. |
 | Consent withdrawal | ✅ Done | Confirmation-gated, halts processing, permanently recorded. |
 | Document upload | ✅ Done | Real files to private storage from the case page, with audit entry. |
-| Patient portal | 🟡 Partial | Portal is built, private and scoped. Linking a patient account to their referral is not built, so it currently shows "no referral linked". |
+| Patient portal | ✅ Done | Portal is private and scoped to one referral. The referring clinician issues a single-use invitation from the case (14-day expiry); redeeming it binds the account to that referral, and both steps are written to the case audit trail. |
 
 ## 1.7 Admin control surfaces
 
@@ -161,7 +161,6 @@ public registers. Currently any 7 digits is accepted.
 
 | Item | Notes |
 |---|---|
-| Patient portal invitation | Link a patient account to their referral and invite them per case. |
 | Introducer workspace | Insurance/broker accounts register and are held for review, but have no workspace. |
 | UK-clinician co-sign | The safeguard that makes introducer-originated cases legitimate. Designed, not built. |
 | Intake file uploads | Files chosen during the wizard record their name only; bytes are not stored. Uploading from the case page afterwards works correctly. |
@@ -206,12 +205,11 @@ After this stage the product does, end to end, what it claims to do.
 ### Stage 2 — make it operable unattended
 4. **Transactional email** — invitations, resets, case-movement notifications.
 5. **Two-factor authentication.**
-6. **Patient portal invitations.**
 
 ### Stage 3 — trust and verification
-7. **GMC / FCA register checks.**
-8. **Per-user RLS policies.**
-9. **Session and device revocation, 90-day inactivity expiry.**
+6. **GMC / FCA register checks.**
+7. **Per-user RLS policies.**
+8. **Session and device revocation, 90-day inactivity expiry.**
 
 ### Stage 4 — completeness
 10. Introducer workspace + UK-clinician co-sign.

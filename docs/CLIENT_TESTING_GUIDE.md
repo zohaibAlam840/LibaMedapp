@@ -277,7 +277,7 @@ script above.
 | **Two-factor login** | Screens exist but codes are not sent or checked. Needed before real patients. | 🟡 |
 | **GMC and FCA checking** | Numbers are collected and stored but not verified against the public registers. | 🟡 |
 | **Emails** | Nothing is sent for invitations, password resets or case updates. Invited staff get their password on screen instead. | ⚪ |
-| **Patient portal access** | The portal is built and private, but connecting a patient account to their specific referral is still to do — a patient currently logs in to "no referral linked". | 🟡 |
+| **Patient portal access** | Working. The referring clinician invites the patient from the case; the single-use link creates an account bound to that one referral. Admins deliberately cannot issue it — they have no case in front of them to bind it to. | ✅ |
 | **Insurance / introducer area** | They can register and are held for review, but have no workspace yet, and the UK-doctor co-sign step is not built. | 🟡 |
 | **Files attached during the wizard** | Names are recorded but the file itself is not stored. Uploading from the case page afterwards **does** store the real file securely. | 🟡 |
 | **Medical image viewer** | Scans can be attached and downloaded but not viewed in the browser. Agreed as out of scope for version one. | ⚪ |
