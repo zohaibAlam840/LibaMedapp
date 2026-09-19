@@ -1,14 +1,23 @@
 # What to check after this release
 
-Release `f31cb0d` — 19 Aug 2026. Deployed to libamed.com from `main`.
+Latest release `0c1bf83` — 19 Sep 2026 (previous: `f31cb0d`, 19 Aug).
+Deployed to libamed.com from `main`.
 
-This release removed invented data from the admin area, closed several
-access-control holes, and made partner hospitals and user postings editable.
-Because so much of it replaced fixed numbers with live queries, **most of these
-checks are "does it show the truth", not "does it render"**.
+> **Run migration 005 first.** Paste
+> `supabase/migrations/005_contact_prefs_content.sql` into the Supabase SQL
+> editor. Until you do, the contact form tells senders to email instead,
+> editing help content is disabled, and notification preferences cannot save —
+> each screen says so rather than failing quietly.
 
-Work through Part 1 first. Two of the housekeeping steps use controls that only
-exist in this build.
+The August release removed invented data from the admin area and closed several
+access-control holes. **This September release wires the screens that looked
+finished but did nothing**: the contact form, notification preferences, help
+content editing, and sessions — see Part 7.
+
+Because both releases largely replaced fixed numbers with live queries, **most
+of these checks are "does it show the truth", not "does it render"**.
+
+Work through Part 1 first.
 
 ---
 
@@ -146,17 +155,57 @@ Delete any test request afterwards.
 
 ---
 
-## Part 7 — Known gaps (do not report these as bugs)
+## Part 7 — This release: the screens that now work
+
+### 7.1 Contact form → admin inbox
+
+1. Open `/en/contact` signed out and send a message.
+2. You should see **"Thanks — we have your message"**, not a silent reset.
+3. Sign in as admin → **Enquiries** (under Operate) → it is there.
+4. Add a note, press **Mark answered** → it moves to Answered & archived.
+5. Check it also arrived by email. If the email fails the enquiry is still in
+   the inbox — it is stored before any mail is attempted.
+
+### 7.2 Notification preferences → real emails
+
+1. `/en/account/notifications` — the three toggles save and survive a reload.
+2. Turn **New secure message** off for one clinician.
+3. Message that clinician from the other side of a case — no email.
+4. Turn it back on and message again — an email arrives naming the case.
+
+Emails deliberately contain **no patient detail**, only the case reference and
+what changed. Clinical content in one of these emails would be a bug worth
+reporting immediately.
+
+### 7.3 Help & glossary editing
+
+1. `/en/admin/content` → **Add question** → save.
+2. Open `/en/faq` — the new question is live.
+3. Edit an existing answer, reload the public page — the change is there.
+4. Delete the test question.
+
+An amber "migration 005" notice means the migration has not been run yet.
+
+### 7.4 Sessions
+
+`/en/account/sessions` no longer lists invented devices. **Sign out on all
+devices** should end this session and every other one — check a second browser
+is signed out too.
+
+### 7.5 Password reset
+
+`/en/admin/users` → **Reset password** on any account but your own. A new
+password is shown once and emailed. This is how to make `a.chen@nhs.net` and
+the other unknown-password accounts usable instead of deleting them.
+
+---
+
+## Part 8 — Known gaps (do not report these as bugs)
 
 These are not built yet, and the screens say so where they can:
 
 | Area | State |
 |---|---|
-| Public **contact form** | Sends nowhere — the enquiry is discarded. Highest-priority fix. |
-| Account → **Sessions** | Three hardcoded devices; revoke does nothing. Supabase exposes no session list, so this needs rewriting to "sign out everywhere". |
-| Account → **Notifications** | Toggles do not persist |
-| Account → **profile** | Displays details, does not save |
-| **FAQ & glossary** admin | Lists real content; Add/Edit buttons do nothing until the content moves to a table |
 | **Introducer workspace** | They can register, then have nowhere to go. UK-clinician co-sign not built. |
 | **Regulatory task tracking** | Attention flags cases needing a KVKK notice; nothing records whether one was filed |
 | **Access expiry** | Nothing records when receiving access lapses |
