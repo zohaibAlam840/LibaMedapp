@@ -260,7 +260,18 @@ export async function canWriteCase(
 ): Promise<boolean> {
   const u = await resolveUser(user);
   if (!u || u.accountType !== "clinician") return false;
-  return canAccessCase(ref, u);
+  if (!(await canAccessCase(ref, u))) return false;
+  // The receiving hospital's access window (migration 007). It closes the
+  // hospital's side only: the referring clinician holds the record and the
+  // admin oversees it, so neither is stopped by it. An expired case stays
+  // VISIBLE and becomes read-only — hiding it would read as data loss.
+  if (u.role === "receiving" || u.role === "coordinator") {
+    // Imported dynamically: lib/db/access.ts reads getCases from this module,
+    // and a top-level import would close the cycle.
+    const { receivingAccessExpired } = await import("@/lib/db/access");
+    if (await receivingAccessExpired(ref)) return false;
+  }
+  return true;
 }
 
 interface ComplianceRow {

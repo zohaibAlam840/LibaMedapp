@@ -10,6 +10,7 @@ import {
   ScanLine,
   ShieldCheck,
   Timer,
+  TimerOff,
 } from "lucide-react";
 import { Card, CardTitle } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
@@ -19,6 +20,7 @@ import CaseActionBar from "@/components/case/CaseActionBar";
 import InfoRequestList from "@/components/case/InfoRequestList";
 import { getInfoRequests } from "@/lib/db/clinical";
 import { getCase, getDocuments } from "@/lib/db/referrals";
+import { getAccessWindow } from "@/lib/db/access";
 
 // 9D · Receiving case detail + document access (#43) — acceptance §14.3.
 export default async function Page({
@@ -32,6 +34,11 @@ export default async function Page({
   const documents = await getDocuments(caseId);
   const infoRequests = await getInfoRequests(c.ref);
   const base = `/${locale}/receiving/cases/${c.id}`;
+  // The hospital's access window (migration 007). An expired case is shown, not
+  // hidden — a case that vanishes from a clinician's list reads as data loss —
+  // but every write on it is refused by canWriteCase, so the banner is what
+  // explains why the buttons no longer do anything.
+  const accessWindow = await getAccessWindow(c.ref);
 
   return (
     <div className="flex flex-col gap-5">
@@ -51,6 +58,15 @@ export default async function Page({
           </Button>
         </div>
       </div>
+
+      {accessWindow?.expired && (
+        <p className="flex items-start gap-2 rounded-inner bg-warning-bg px-3.5 py-2.5 text-[13px] text-warning-text">
+          <TimerOff aria-hidden className="mt-0.5 size-4 shrink-0" />
+          Your hospital&rsquo;s access to this case closed on {accessWindow.expiresAt}. You can
+          still read it, but it can no longer be changed from here. Ask the referring clinician or
+          LibaMed to extend the window if the episode is still open.
+        </p>
+      )}
 
       {/* Next action for the receiving team */}
       <Card>

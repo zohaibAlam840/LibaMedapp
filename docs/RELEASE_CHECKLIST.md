@@ -3,14 +3,16 @@
 Latest release — 19 Sep 2026 (previous: `0c1bf83`, same day; `f31cb0d`, 19 Aug).
 Deployed to libamed.com from `main`.
 
-> **Run migrations 005 and 006 first.** Paste
-> `supabase/migrations/005_contact_prefs_content.sql` and then
-> `supabase/migrations/006_introducer_cosign.sql` into the Supabase SQL
-> editor. Until you do, the contact form tells senders to email instead,
+> **Run migrations 005, 006 and 007 first,** in that order. Paste
+> `supabase/migrations/005_contact_prefs_content.sql`,
+> `supabase/migrations/006_introducer_cosign.sql` and
+> `supabase/migrations/007_regulatory_access.sql` into the Supabase SQL editor. Until you do, the contact form tells senders to email instead,
 > editing help content is disabled, and notification preferences cannot save —
 > each screen says so rather than failing quietly. Without 006 the introducer
 > workspace and the co-sign queue say so too, and refuse to take a case rather
-> than discarding what someone typed about a patient.
+> than discarding what someone typed about a patient. Without 007, Attention
+> falls back to flagging the same regulatory duty on every load, exactly as it
+> did before.
 
 The August release removed invented data from the admin area and closed several
 access-control holes. **This September release wires the screens that looked
@@ -239,15 +241,57 @@ Two clinicians opening the same case cannot both sign it; the second gets
 
 ---
 
-## Part 9 — Known gaps (do not report these as bugs)
+## Part 9 — Regulatory filings & access windows (new — migration 007)
+
+Two things the admin area flagged but never recorded. Both are now records, so
+a completed task looks different from an outstanding one.
+
+### 9.1 Regulatory filings
+
+Only the **Turkey corridor** owes a notice today (KVKK, within 5 business days
+of the first transfer) — every other corridor transfers under an adequacy
+decision and owes nothing.
+
+1. `/en/admin/attention` → **Regulatory tasks** shows the KVKK notice as
+   **Not filed**.
+2. **Regulatory** (under Govern) → record the filing: date, the regulator's
+   reference, and a review date if it needs renewing.
+3. Reload Attention — the item is **gone**. That is the point: before this it
+   was flagged on every load whether or not anything had been done, which is
+   how an admin learns to ignore a governance page.
+4. Set a review date in the past and it comes back as **Due for review**, not
+   as "never filed".
+
+### 9.2 Access windows
+
+The `access-expired` status existed from the first schema with nothing able to
+set it. The window now starts when a hospital **accepts** a case — not when it
+is submitted, because a case waiting in a queue is not being worked on.
+
+1. As a receiving clinician, **Accept for review** on any case.
+2. `/en/admin/cases/<ref>` → **Receiving access** shows a date about 90 days
+   out (the per-corridor default).
+3. Cases inside 14 days, or past their date, appear on Attention.
+4. To check enforcement, set one case's date into the past in the SQL editor:
+   `update referrals set access_expires_at = current_date - 1 where ref = '<ref>';`
+   The receiving clinician should still **see** the case — with a banner saying
+   why — and every write on it should be refused. The referring clinician and
+   admins are unaffected: it is the hospital's window that closes.
+5. **Extend window** on the admin case page, with a reason. The extension is
+   written to that case's audit trail with the old and new dates.
+
+Migration 007 backfills a window onto cases that have already been accepted,
+measured from their last activity, so existing cases do not all expire at once.
+
+---
+
+## Part 10 — Known gaps (do not report these as bugs)
 
 These are not built yet, and the screens say so where they can:
 
 | Area | State |
 |---|---|
 | **Introducer case documents** | An introducer writes background text; attaching scans stays the co-signing clinician's job |
-| **Regulatory task tracking** | Attention flags cases needing a KVKK notice; nothing records whether one was filed |
-| **Access expiry** | Nothing records when receiving access lapses |
 | **GMC / FCA** | Numbers stored, checked by a person — there is no public API |
 | **Per-user RLS** | Scoping is enforced in application code, not database policies |
 | **DICOM viewing** | Attach and download only — agreed out of scope for v1 |

@@ -11,6 +11,8 @@ import { getSessionUser } from "@/lib/auth";
 import { getCase, getDocuments, getMessages } from "@/lib/db/referrals";
 import { getCaseAuditTrail } from "@/lib/db/audit";
 import { getConsentRecords } from "@/lib/db/governance";
+import { getAccessWindow } from "@/lib/db/access";
+import AccessWindowCard from "@/components/admin/AccessWindowCard";
 
 // 9E · Case oversight detail (#51): governance view — timeline, clinicians,
 // residency + consent confirmation, the case's own audit trail, admin actions.
@@ -26,10 +28,11 @@ export default async function Page({
 }: {
   params: Promise<{ locale: string; caseId: string }>;
 }) {
-  const { caseId } = await params;
+  const { locale, caseId } = await params;
   const user = await getSessionUser();
   const c = await getCase(caseId, user);
   if (!c) notFound();
+  const accessWindow = await getAccessWindow(c.ref);
 
   const [trail, messages, documents, consentRecords] = await Promise.all([
     getCaseAuditTrail(c.ref),
@@ -154,6 +157,8 @@ export default async function Page({
               />
             </div>
           </Card>
+
+          <AccessWindowCard locale={locale} caseRef={c.ref} window={accessWindow} />
 
           <Card>
             <SectionLabel className="mb-3">Clinicians on this case</SectionLabel>

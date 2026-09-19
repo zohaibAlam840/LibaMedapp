@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BadgeCheck, CheckCircle2, FileWarning, Globe2, UserRoundCheck } from "lucide-react";
+import { BadgeCheck, CheckCircle2, FileWarning, Globe2, TimerOff, UserRoundCheck } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Card, CardTitle } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
@@ -8,6 +8,8 @@ import Chip from "@/components/ui/Chip";
 import EmptyState from "@/components/ui/EmptyState";
 import { getSessionUser } from "@/lib/auth";
 import { getGovernanceSummary } from "@/lib/db/governance";
+import { getCorridorDuties } from "@/lib/db/regulatory";
+import { getExpiringAccess } from "@/lib/db/access";
 
 // Admin/manager · Attention (sidebar aggregation) — everything that needs a
 // governance decision, grouped by kind.
@@ -18,9 +20,10 @@ import { getGovernanceSummary } from "@/lib/db/governance";
 // row behind it — an admin must be able to trust that an empty page means
 // nothing is outstanding.
 //
-// Dated regulatory to-dos (was the KVKK notice filed, and when) and access-
-// expiry tracking are V1.5: there is no column recording either, so this page
-// surfaces the cases that require attention rather than inventing a countdown.
+// Regulatory filings and access windows are now RECORDED (migration 007), so
+// this page states whether a task is outstanding rather than restating the duty
+// on every load. A filed notice drops off the list; that is the whole point —
+// a page that flags the same item for ever teaches an admin to ignore it.
 
 type Severity = "high" | "medium" | "low";
 
@@ -49,14 +52,22 @@ export default async function Page({
 
   const groups: { title: string; icon: LucideIcon; items: Item[] }[] = [];
 
-  const regulatory = summary.corridors
-    .filter((c) => c.notificationAuthority && c.cases > 0)
-    .map<Item>((c) => ({
-      title: `${c.notificationAuthority} notification — ${c.label}`,
-      sub: `${c.cases} ${c.cases === 1 ? "case" : "cases"} on this corridor transfer under Standard Contractual Clauses. The regulator must be notified within ${c.notificationDays ?? 5} business days of the first transfer.`,
-      severity: "high",
-      tag: `${c.cases} ${c.cases === 1 ? "case" : "cases"}`,
-      href: `/${locale}/admin/cases`,
+  // Only corridors whose notice is actually outstanding or stale. A satisfied
+  // duty is not an attention item.
+  const counts = new Map<string, number>();
+  for (const c of summary.corridors) counts.set(c.id, c.cases);
+  const duties = await getCorridorDuties(counts);
+  const regulatory = duties
+    .filter((d) => d.state === "outstanding" || d.state === "due-for-review")
+    .map<Item>((d) => ({
+      title: `${d.authority} notification — ${d.label}`,
+      sub:
+        d.state === "due-for-review"
+          ? `Filed ${d.latest?.filedAt}, but the review date has passed. Confirm the notification is still current or file again.`
+          : `${d.cases} ${d.cases === 1 ? "case" : "cases"} on this corridor transfer under Standard Contractual Clauses. The regulator must be notified within ${d.withinBusinessDays} business days of the first transfer, and no filing is recorded.`,
+      severity: d.state === "outstanding" ? "high" : "medium",
+      tag: d.state === "outstanding" ? "Not filed" : "Due for review",
+      href: `/${locale}/admin/regulatory`,
     }));
   if (regulatory.length > 0) groups.push({ title: "Regulatory tasks", icon: Globe2, items: regulatory });
 
@@ -90,6 +101,21 @@ export default async function Page({
     groups.push({ title: "Accreditation", icon: BadgeCheck, items: accreditation });
   }
 
+  const access = (await getExpiringAccess(user)).map<Item>((w) => ({
+    title: w.expired
+      ? `${w.ref} — receiving access has lapsed`
+      : `${w.ref} — receiving access closes ${w.expiresAt}`,
+    sub: w.expired
+      ? `${w.hospital || "The receiving hospital"} can still read this case but can no longer change it. Extend the window if the episode is genuinely still open.`
+      : `${w.hospital || "The receiving hospital"} has ${w.daysLeft} ${w.daysLeft === 1 ? "day" : "days"} left to work on this case.`,
+    severity: w.expired ? "high" : "medium",
+    tag: w.expired ? `Lapsed ${w.expiresAt}` : `${w.daysLeft}d left`,
+    href: `/${locale}/admin/cases/${w.ref}`,
+  }));
+  if (access.length > 0) {
+    groups.push({ title: "Access windows", icon: TimerOff, items: access });
+  }
+
   const total = groups.reduce((n, g) => n + g.items.length, 0);
   const high = groups.reduce((n, g) => n + g.items.filter((i) => i.severity === "high").length, 0);
 
@@ -100,8 +126,8 @@ export default async function Page({
           <h1 className="text-[28px] font-semibold text-ink">Requires attention</h1>
           <p className="mt-1 text-[15px] text-ink-secondary">
             {total === 0
-              ? "Regulatory tasks, verification, and accreditation — checked against live records."
-              : `${total} ${total === 1 ? "item" : "items"} across regulatory tasks, verification, and accreditation.`}
+              ? "Regulatory tasks, verification, accreditation, and access windows — checked against live records."
+              : `${total} ${total === 1 ? "item" : "items"} across regulatory tasks, verification, accreditation, and access windows.`}
           </p>
         </div>
         {high > 0 && (
@@ -116,7 +142,7 @@ export default async function Page({
           <EmptyState
             icon={CheckCircle2}
             title="Nothing needs attention"
-            description="No accreditation is near expiry, no account is waiting on verification, and no live case sits on a corridor with an outstanding regulator notice."
+            description="No accreditation is near expiry, no account is waiting on verification, every corridor's regulator notice is on file, and no receiving access window is closing."
           />
         </Card>
       ) : (
@@ -159,8 +185,14 @@ export default async function Page({
       )}
 
       <p className="text-xs text-ink-muted">
-        Dated regulatory to-dos (when each notice was filed) and access-expiry
-        tracking are V1.5 — this page flags what the records support today.{" "}
+        Every item here has a record behind it. Filings are recorded under{" "}
+        <Link
+          href={`/${locale}/admin/regulatory`}
+          className="font-medium text-accent hover:underline"
+        >
+          Regulatory filings
+        </Link>
+        ; access windows start when a hospital accepts a case.{" "}
         <Link href={`/${locale}/admin`} className="font-medium text-accent hover:underline">
           Back to dashboard
         </Link>

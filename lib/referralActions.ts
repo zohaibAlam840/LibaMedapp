@@ -87,6 +87,13 @@ export async function advanceStatusAction(formData: FormData): Promise<void> {
   try {
     const ok = await updateReferralStatus(ref, status);
     if (ok) {
+      // Acceptance is what starts the receiving hospital's access window
+      // (migration 007) — not submission, because a case sitting in a queue is
+      // not being worked on. No-op if a window is already running.
+      if (status === "under-review") {
+        const { startAccessWindow } = await import("@/lib/db/access");
+        await startAccessWindow(ref);
+      }
       await appendAudit(ref, { actor: user.name, event, detail: CASE_STATUS_LABELS[status] });
       revalidateCase(locale, side, ref);
       await notifyStatusChange(ref, user.profileId, CASE_STATUS_LABELS[status] ?? status, locale);
