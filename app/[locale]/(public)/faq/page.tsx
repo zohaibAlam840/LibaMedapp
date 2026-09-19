@@ -1,6 +1,6 @@
 import Link from "next/link";
 import FaqBrowser from "@/components/marketing/FaqBrowser";
-import { FAQS, GLOSSARY } from "@/lib/marketing";
+import { getFaqItems, getGlossaryTerms } from "@/lib/db/content";
 
 // 9A · FAQ + glossary (spec V2 page 9): a centred column — pill-filtered
 // questions, then the alphabetical glossary with a jump bar.
@@ -12,7 +12,15 @@ export default async function Page({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
-  const letters = [...new Set(GLOSSARY.map((g) => g.term[0].toUpperCase()))].sort();
+  // Content comes from the database so an admin edit shows here immediately;
+  // the loader falls back to the wording shipped in the code if the content
+  // tables are not present yet.
+  const [faqItems, glossary] = await Promise.all([getFaqItems(), getGlossaryTerms()]);
+  const faqs = faqItems.map((f) => ({ category: f.category, q: f.question, a: f.answer }));
+  const terms = [...glossary].sort((a, b) => a.term.localeCompare(b.term));
+  const letters = [...new Set(terms.map((g) => g.term[0].toUpperCase()))].sort();
+  // Only offer a filter pill for a category that has questions in it.
+  const categories = CATEGORIES.filter((c) => faqs.some((f) => f.category === c));
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-16 md:px-8 md:py-20">
@@ -34,7 +42,7 @@ export default async function Page({
         </p>
       </div>
 
-      <FaqBrowser categories={CATEGORIES} faqs={FAQS} />
+      <FaqBrowser categories={categories} faqs={faqs} />
 
       <div className="flex flex-col gap-10 pt-16">
         {/* Glossary */}
@@ -52,7 +60,7 @@ export default async function Page({
               ))}
             </nav>
             <dl className="flex flex-col gap-4">
-              {GLOSSARY.sort((a, b) => a.term.localeCompare(b.term)).map((g, i, arr) => {
+              {terms.map((g, i, arr) => {
                 const letter = g.term[0].toUpperCase();
                 const first = i === 0 || arr[i - 1].term[0].toUpperCase() !== letter;
                 return (
@@ -63,7 +71,7 @@ export default async function Page({
                   >
                     <dt className="text-[15px] font-semibold text-ink">{g.term}</dt>
                     <dd className="mt-1 text-sm leading-relaxed text-ink-secondary">
-                      {g.def}
+                      {g.definition}
                     </dd>
                   </div>
                 );

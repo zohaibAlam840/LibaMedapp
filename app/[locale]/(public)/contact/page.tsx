@@ -1,7 +1,6 @@
 import { Building2, Clock3, Flag } from "lucide-react";
 import { Card, CardTitle } from "@/components/ui/Card";
-import Button from "@/components/ui/Button";
-import { Field, Input, Select, Textarea } from "@/components/ui/Field";
+import ContactForm from "@/components/marketing/ContactForm";
 
 // 9A · Contact (spec V2 page 8): form card + info column. Explicitly not a
 // channel for clinical or patient information.
@@ -19,51 +18,7 @@ export default async function Page() {
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <Card className="p-6">
           <CardTitle>Send a message</CardTitle>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Full name" htmlFor="c-name">
-              <Input id="c-name" autoComplete="name" />
-            </Field>
-            <Field label="Email" htmlFor="c-email">
-              <Input id="c-email" type="email" autoComplete="email" />
-            </Field>
-            <Field label="Role" htmlFor="c-role">
-              <Select id="c-role" defaultValue="">
-                <option value="" disabled>
-                  Select…
-                </option>
-                <option>Clinician</option>
-                <option>Hospital / provider</option>
-                <option>Press</option>
-                <option>Other</option>
-              </Select>
-            </Field>
-            <Field label="Organisation" htmlFor="c-org">
-              <Input id="c-org" autoComplete="organization" />
-            </Field>
-          </div>
-          <div className="mt-4 flex flex-col gap-4">
-            <Field label="Subject" htmlFor="c-subject">
-              <Select id="c-subject" defaultValue="">
-                <option value="" disabled>
-                  Select…
-                </option>
-                <option>Partnership enquiry</option>
-                <option>Registering as a clinician</option>
-                <option>Data protection question</option>
-                <option>Something else</option>
-              </Select>
-            </Field>
-            <Field
-              label="Message"
-              htmlFor="c-message"
-              hint="No clinical details or patient-identifying information, please."
-            >
-              <Textarea id="c-message" rows={6} />
-            </Field>
-          </div>
-          <div className="mt-5 flex justify-end">
-            <Button>Send message</Button>
-          </div>
+          <ContactForm />
         </Card>
 
         <div className="flex flex-col gap-4">

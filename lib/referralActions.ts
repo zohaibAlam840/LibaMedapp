@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getSessionUser } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { appendAudit, canAccessCase, canWriteCase } from "@/lib/db/referrals";
+import { notifyNewMessage, notifyNewReferral, notifyStatusChange } from "@/lib/notify";
 import {
   DOCUMENTS_BUCKET,
   insertDocument,
@@ -61,6 +62,9 @@ export async function sendMessageAction(
       detail: body.length > 120 ? `${body.slice(0, 117)}…` : body,
     });
     revalidateCase(locale, side, ref);
+    // Tell the clinician on the other side. Awaited but never throwing, so a
+    // mail failure cannot lose a message that is already stored.
+    await notifyNewMessage(ref, user.profileId, locale);
     return { ok: true };
   } catch (e) {
     return { error: (e as Error)?.message ?? "Could not send the message." };
@@ -85,6 +89,7 @@ export async function advanceStatusAction(formData: FormData): Promise<void> {
     if (ok) {
       await appendAudit(ref, { actor: user.name, event, detail: CASE_STATUS_LABELS[status] });
       revalidateCase(locale, side, ref);
+      await notifyStatusChange(ref, user.profileId, CASE_STATUS_LABELS[status] ?? status, locale);
     }
   } catch (e) {
     console.warn("[action] advanceStatus failed:", (e as Error)?.message);
@@ -284,6 +289,9 @@ export async function createReferralAction(
     }
     revalidatePath(`/${payload.locale}/referring/cases`);
     revalidatePath(`/${payload.locale}/referring`);
+    // Tell the receiving hospital a case has landed. Without this a referral
+    // sits in a queue nobody has been told to look at.
+    await notifyNewReferral(ref, user.profileId, payload.locale);
     return { ok: true, ref };
   } catch (e) {
     return { ok: false, error: (e as Error)?.message ?? "Could not create the case." };

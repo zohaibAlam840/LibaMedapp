@@ -2,13 +2,11 @@ import Link from "next/link";
 import { BadgeCheck, ChevronRight, KeyRound, MonitorSmartphone, Bell, ShieldCheck } from "lucide-react";
 import { Card, CardTitle } from "@/components/ui/Card";
 import Avatar from "@/components/ui/Avatar";
-import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
-import { Field, Select } from "@/components/ui/Field";
 import ProfileForm from "@/components/auth/ProfileForm";
 import { getSessionUser } from "@/lib/auth";
 import { ROLE_LABEL } from "@/lib/rbac";
-import { LOCALES, LOCALE_LABELS } from "@/lib/i18n";
+import { LOCALE_LABELS } from "@/lib/i18n";
 
 // 9B · Profile & settings.
 export default async function Page({
@@ -49,22 +47,17 @@ export default async function Page({
           />
         </Card>
 
+        {/* Language lives in the URL, so a select here could only ever look
+            like a setting. The real switcher is in the top bar; this points at
+            it rather than offering a control that changes nothing. */}
         <Card>
-          <CardTitle>Preferences</CardTitle>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Language" htmlFor="lang">
-              <Select id="lang" defaultValue={locale}>
-                {LOCALES.map((l) => (
-                  <option key={l} value={l}>
-                    {LOCALE_LABELS[l]}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-          </div>
-          <p className="mt-3 text-[13px] text-ink-muted">
-            Language follows the address bar — use the language button in the top
-            bar to switch. Your choice is remembered for this browser.
+          <CardTitle>Language</CardTitle>
+          <p className="text-[15px] text-ink">
+            Currently {LOCALE_LABELS[locale as keyof typeof LOCALE_LABELS] ?? locale}.
+          </p>
+          <p className="mt-1 text-[13px] text-ink-secondary">
+            Use the globe button in the top bar to switch language. Your choice
+            follows the address bar and is remembered for this browser.
           </p>
         </Card>
 

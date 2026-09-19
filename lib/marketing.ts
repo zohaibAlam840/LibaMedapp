@@ -69,7 +69,11 @@ export const PLEDGE_COMMITMENTS = [
 export interface Faq {
   q: string;
   a: string;
-  category: "About" | "Referrals" | "Data & privacy" | "Hospitals" | "Costs" | "Access";
+  /**
+   * Free text, not a union: categories are admin-editable now (migration 005),
+   * so the set is whatever is in the table rather than whatever was compiled.
+   */
+  category: string;
 }
 
 export const FAQS: Faq[] = [

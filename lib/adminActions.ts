@@ -671,3 +671,73 @@ export async function updateUserAssignmentAction(formData: FormData): Promise<vo
     console.warn("[action] updateUserAssignment failed:", (e as Error)?.message);
   }
 }
+
+/**
+ * Issue a new one-time password for an existing account.
+ *
+ * Six accounts on this platform had passwords nobody knew and no way to change
+ * them: the only routes were the public reset email (which needs access to that
+ * mailbox) or deleting the person. An admin who can already create accounts and
+ * assign roles can reset one.
+ *
+ * The password is returned to the caller ONCE and emailed to the account
+ * holder; it is never stored anywhere by us.
+ */
+export async function resetUserPasswordAction(
+  _prev: InviteState,
+  formData: FormData,
+): Promise<InviteState> {
+  const admin = await getSessionUser();
+  if (!admin || !admin.canManageUsers) {
+    return { error: "You don't have permission to reset passwords." };
+  }
+
+  const profileId = String(formData.get("profileId") || "");
+  const locale = String(formData.get("locale") || "en");
+  if (!profileId) return { error: "User not found." };
+
+  const sb = supabaseAdmin();
+  const { data: profile, error: pErr } = await sb
+    .from("profiles")
+    .select("auth_user_id, name, email")
+    .eq("id", profileId)
+    .maybeSingle();
+  if (pErr) return { error: pErr.message };
+
+  const row = profile as { auth_user_id: string | null; name: string; email: string | null } | null;
+  if (!row?.auth_user_id) {
+    return { error: "That profile has no sign-in account attached." };
+  }
+  // Resetting your own password here would sign you out mid-session; the
+  // account page is the place for that.
+  if (row.auth_user_id === admin.authUserId) {
+    return { error: "Use Profile & settings to change your own password." };
+  }
+
+  const password = generatePassword();
+  const { error: authErr } = await sb.auth.admin.updateUserById(row.auth_user_id, { password });
+  if (authErr) return { error: authErr.message };
+
+  await appendAdminAudit(
+    admin.name,
+    "Password reset",
+    `${row.email ?? row.name} · by ${admin.name}`,
+  );
+
+  const sent = row.email
+    ? await sendEmail({
+        to: row.email,
+        subject: "Your LibaMed password has been reset",
+        body: `${admin.name} has reset the password on your LibaMed account.
+
+Sign in with the temporary password below, then change it straight away under Profile & settings.
+
+Temporary password: ${password}`,
+        action: { label: "Sign in", url: `${siteUrl()}/${locale}/login` },
+        footnote: "If you weren't expecting this, contact your administrator immediately.",
+      })
+    : false;
+
+  revalidatePath(`/${locale}/admin/users`);
+  return { ok: true, tempPassword: password, email: row.email ?? "", emailed: sent };
+}

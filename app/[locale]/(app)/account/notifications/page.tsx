@@ -1,41 +1,35 @@
-import { Card, CardTitle } from "@/components/ui/Card";
-import Toggle from "@/components/ui/Toggle";
+import { redirect } from "next/navigation";
+import NotificationPrefsForm from "@/components/auth/NotificationPrefsForm";
+import { getSessionUser } from "@/lib/auth";
+import { defaultPrefs, getNotificationPrefs, prefsArePersistable } from "@/lib/db/prefs";
 
-// 9B · Notification preferences. Notifications themselves are V1.5 (§8.5) —
-// this page is the preferences shell (email channel only for now).
-export default async function Page() {
+// 9B · Notification preferences.
+//
+// These now persist, and each one corresponds to an email the platform really
+// sends when a case moves or a message arrives (lib/notify.ts).
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  const user = await getSessionUser();
+  if (!user) redirect(`/${locale}/login`);
+
+  const [prefs, persistable] = await Promise.all([
+    getNotificationPrefs(user.profileId).catch(() => defaultPrefs()),
+    prefsArePersistable(),
+  ]);
+
   return (
     <div className="mx-auto max-w-3xl">
       <h1 className="mb-2 text-[28px] font-semibold text-ink">Notification preferences</h1>
       <p className="mb-6 text-[15px] text-ink-secondary">
-        Email alerts about your cases. In-app and SMS channels arrive later.
+        Email alerts about your cases. Emails never contain patient details — only
+        the case reference and what changed.
       </p>
 
-      <Card>
-        <CardTitle>Case activity</CardTitle>
-        <div className="divide-y divide-line">
-          <Toggle label="New case assigned to you" defaultChecked />
-          <Toggle label="Hospital response received" defaultChecked />
-          <Toggle label="Unread secure message" defaultChecked />
-          <Toggle
-            label="Response overdue against SLA"
-            description="When a receiving team hasn't responded in the expected window"
-            defaultChecked
-          />
-        </div>
-      </Card>
-
-      <Card className="mt-4">
-        <CardTitle>Consent &amp; access</CardTitle>
-        <div className="divide-y divide-line">
-          <Toggle label="Consent nearing expiry" defaultChecked />
-          <Toggle
-            label="Case access nearing expiry"
-            description="Receiving access expires after 90 days of inactivity"
-            defaultChecked
-          />
-        </div>
-      </Card>
+      <NotificationPrefsForm locale={locale} prefs={prefs} persistable={persistable} />
     </div>
   );
 }

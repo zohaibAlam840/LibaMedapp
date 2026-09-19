@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import NumberedStepStrip from "@/components/ui/NumberedStepStrip";
 import { AccordionItem } from "@/components/ui/Accordion";
-import { FAQS } from "@/lib/marketing";
+import { getFaqItems } from "@/lib/db/content";
 import { getPublishedCorridors } from "@/lib/db/corridors";
 
 // 9A · For clinicians (spec V2 page 7): hero → benefits → GMC explainer →
@@ -14,6 +14,7 @@ export default async function Page({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+  const faqs = await getFaqItems();
   const corridors = await getPublishedCorridors();
   const base = `/${locale}`;
 
@@ -160,11 +161,12 @@ export default async function Page({
         <div className="mx-auto max-w-3xl px-4 py-16 md:px-8">
           <h2 className="mb-6 text-2xl font-semibold text-ink">Questions doctors ask</h2>
           <div className="flex flex-col gap-3">
-            {FAQS.filter((f) => ["Referrals", "Data & privacy", "Access", "Costs"].includes(f.category))
+            {faqs
+              .filter((f) => ["Referrals", "Data & privacy", "Access", "Costs"].includes(f.category))
               .slice(0, 8)
               .map((f) => (
-                <AccordionItem key={f.q} question={f.q}>
-                  {f.a}
+                <AccordionItem key={f.id} question={f.question}>
+                  {f.answer}
                 </AccordionItem>
               ))}
           </div>

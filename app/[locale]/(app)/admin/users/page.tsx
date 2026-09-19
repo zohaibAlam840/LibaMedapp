@@ -5,6 +5,7 @@ import Chip from "@/components/ui/Chip";
 import ResponsiveTable from "@/components/ui/ResponsiveTable";
 import InviteUserForm from "@/components/admin/InviteUserForm";
 import UserAssignmentForm from "@/components/admin/UserAssignmentForm";
+import ResetPasswordButton from "@/components/admin/ResetPasswordButton";
 import { ROLE_LABEL } from "@/lib/rbac";
 import { getUsers } from "@/lib/db/users";
 import { getHospitals } from "@/lib/db/hospitals";
@@ -76,6 +77,7 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
               { key: "posting", label: "Hospital" },
               { key: "status", label: "Status" },
               { key: "assign", label: "Role & posting" },
+              { key: "access", label: "Access" },
             ]}
             rows={users.map((u) => {
               const roleKey = u.role ?? u.accountType;
@@ -101,6 +103,9 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
                   ),
                   org: u.org || "—",
                   posting: hospitalName(u, hospitals),
+                  access: (
+                    <ResetPasswordButton locale={locale} profileId={u.id} name={u.name} />
+                  ),
                   assign:
                     u.accountType === "clinician" ? (
                       <UserAssignmentForm

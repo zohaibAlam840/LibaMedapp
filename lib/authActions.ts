@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { supabaseServer } from "@/lib/supabase/server";
+import { clearSupabaseCookies } from "@/lib/supabase/cookies";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getSessionUser, landingPath } from "@/lib/auth";
 import { sendEmail, siteUrl } from "@/lib/email";
@@ -68,22 +69,6 @@ export async function signOutAction(formData: FormData): Promise<void> {
 
   // redirect() throws NEXT_REDIRECT (expected) — must be outside any try/catch.
   redirect(`/${locale}/login`);
-}
-
-/**
- * Belt and braces: delete any leftover `sb-*` auth cookies directly. If
- * signOut() threw before its own cookie writes, a stale token would otherwise
- * survive and the next page would sign the person straight back in.
- */
-async function clearSupabaseCookies(): Promise<void> {
-  try {
-    const store = await cookies();
-    for (const { name } of store.getAll()) {
-      if (name.startsWith("sb-")) store.delete(name);
-    }
-  } catch {
-    /* read-only cookie store (not a Server Action) — nothing to clear */
-  }
 }
 
 /**
