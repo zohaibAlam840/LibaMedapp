@@ -17,6 +17,7 @@ import {
   Inbox,
   LayoutDashboard,
   MessageSquare,
+  PenLine,
   ScrollText,
   ShieldCheck,
   Stethoscope,
@@ -48,6 +49,7 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { href: "/referring/cases", label: "My cases", short: "Cases", icon: Folder },
     { href: "/referring/messages", label: "Messages", short: "Messages", icon: MessageSquare },
     { href: "/referring/consent", label: "Consent", short: "Consent", icon: ShieldCheck },
+    { href: "/referring/cosign", label: "Co-sign", short: "Co-sign", icon: PenLine },
   ],
   receiving: [
     { href: "/receiving", label: "My queue", short: "Queue", icon: Inbox },

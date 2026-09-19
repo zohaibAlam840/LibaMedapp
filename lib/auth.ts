@@ -122,13 +122,19 @@ function isFrameworkSignal(err: unknown): boolean {
  * authenticated users straight back here.
  */
 export function landingPath(locale: string, p: SessionProfile): string {
-  // An unverified account can't enter the app at all — send it directly to the
-  // page explaining why, rather than bouncing off the app layout first.
+  // An introducer may work while their registration is checked — the workspace
+  // lets them draft and blocks only submission — so this branch comes FIRST,
+  // before the unverified catch-all below.
+  if (p.accountType === "introducer") {
+    return p.accountStatus === "declined"
+      ? `/${locale}/account-pending?status=declined`
+      : `/${locale}/introducer`;
+  }
+  // Any other unverified account can't enter the app at all — send it directly
+  // to the page explaining why, rather than bouncing off the app layout first.
   if (p.accountStatus !== "verified") return `/${locale}/account-pending`;
 
   if (p.accountType === "patient") return `/${locale}/portal`;
-  // Introducers have no workspace yet, and the (app) area rejects non-clinicians.
-  if (p.accountType === "introducer") return `/${locale}/account-pending`;
   const home: Record<Role, string> = {
     public: "/",
     referring: "/referring",

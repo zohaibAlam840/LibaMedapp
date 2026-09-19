@@ -1,18 +1,23 @@
 # What to check after this release
 
-Latest release `0c1bf83` — 19 Sep 2026 (previous: `f31cb0d`, 19 Aug).
+Latest release — 19 Sep 2026 (previous: `0c1bf83`, same day; `f31cb0d`, 19 Aug).
 Deployed to libamed.com from `main`.
 
-> **Run migration 005 first.** Paste
-> `supabase/migrations/005_contact_prefs_content.sql` into the Supabase SQL
+> **Run migrations 005 and 006 first.** Paste
+> `supabase/migrations/005_contact_prefs_content.sql` and then
+> `supabase/migrations/006_introducer_cosign.sql` into the Supabase SQL
 > editor. Until you do, the contact form tells senders to email instead,
 > editing help content is disabled, and notification preferences cannot save —
-> each screen says so rather than failing quietly.
+> each screen says so rather than failing quietly. Without 006 the introducer
+> workspace and the co-sign queue say so too, and refuse to take a case rather
+> than discarding what someone typed about a patient.
 
 The August release removed invented data from the admin area and closed several
 access-control holes. **This September release wires the screens that looked
 finished but did nothing**: the contact form, notification preferences, help
-content editing, and sessions — see Part 7.
+content editing, and sessions (Part 7) — and builds the one part of the
+product that was missing rather than broken: the introducer workspace and
+UK-clinician co-sign (Part 8).
 
 Because both releases largely replaced fixed numbers with live queries, **most
 of these checks are "does it show the truth", not "does it render"**.
@@ -200,13 +205,47 @@ the other unknown-password accounts usable instead of deleting them.
 
 ---
 
-## Part 8 — Known gaps (do not report these as bugs)
+## Part 8 — Introducer origination & UK co-sign (new — migration 006)
+
+This is the part of the product that previously did not exist: an introducer
+could register and then had nowhere to go.
+
+**The rule it enforces:** an introducer can WRITE a case but never SEND one. A
+referral only reaches a hospital when a UK-registered clinician co-signs it, and
+signing makes that clinician the referring clinician of record.
+
+1. **Sign in as an introducer** (`/en/admin/verification` has two pending
+   registrations you can approve, or invite one). You land on
+   `/en/introducer` — not on the "nowhere to go" page.
+2. **Start a case** → patient reference, corridor, background → Create draft.
+3. Confirm the draft is invisible to everyone else: sign in as an admin and
+   check `/en/admin/cases`; as a receiving clinician, check your queue. The
+   hospital you chose must **not** see it.
+4. **Submit for co-sign**. A pending (unverified) introducer should find the
+   button disabled with a reason — drafting is allowed while the FCA or employer
+   check runs; submitting is not.
+5. **Sign in as a referring clinician** → **Co-sign** in the sidebar, with a
+   count badge → open the case.
+6. **Send back** with a note → the introducer sees the note and the case is a
+   draft again. They should also get an email.
+7. Revise, resubmit, then **Co-sign and send**: choose the NHS non-substitution
+   reason, write the justification, tick the responsibility statement.
+8. The case now behaves like any other referral: it appears in **My cases** for
+   the clinician who signed, in the receiving hospital's queue, and in the audit
+   log with both names — who raised it and who signed it.
+
+Two clinicians opening the same case cannot both sign it; the second gets
+"another clinician may have taken it".
+
+---
+
+## Part 9 — Known gaps (do not report these as bugs)
 
 These are not built yet, and the screens say so where they can:
 
 | Area | State |
 |---|---|
-| **Introducer workspace** | They can register, then have nowhere to go. UK-clinician co-sign not built. |
+| **Introducer case documents** | An introducer writes background text; attaching scans stays the co-signing clinician's job |
 | **Regulatory task tracking** | Attention flags cases needing a KVKK notice; nothing records whether one was filed |
 | **Access expiry** | Nothing records when receiving access lapses |
 | **GMC / FCA** | Numbers stored, checked by a person — there is no public API |

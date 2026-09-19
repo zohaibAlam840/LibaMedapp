@@ -7,8 +7,10 @@ import { getSessionUser } from "@/lib/auth";
 // Where an account waits when it can't reach the app yet:
 //  · pending   — a person is checking the GMC / FCA number by hand
 //  · declined  — the check didn't pass
-//  · verified introducer — approved, but the introducer workspace isn't built,
-//    so say so plainly rather than bouncing them around the app.
+//
+// An introducer is NOT sent here any more — verified or pending, they have a
+// workspace to go to (migration 006). The branch below stays for anyone who
+// reaches this URL directly, and points them at it rather than stranding them.
 export default async function Page({
   params,
   searchParams,
@@ -30,11 +32,11 @@ export default async function Page({
           title: "We couldn't verify your registration",
           body: "We weren't able to match your registration number to the public register, so the account isn't active. If you think that's a mistake — a mistyped number, for instance — reply to the email we sent and we'll look again.",
         }
-      : state === "verified" && isIntroducer
+      : isIntroducer
         ? {
             icon: ShieldCheck,
-            title: "You're verified — your workspace is on the way",
-            body: "Your registration has been approved. The area where you'll originate cases isn't open yet. In the meantime, contact us directly and a UK clinician will co-sign any case you bring, exactly as it will work here.",
+            title: "Your workspace is open",
+            body: "You can write cases now. Each one stays a private draft until you submit it, and a UK-registered clinician co-signs it before it reaches a hospital.",
           }
         : {
             icon: Hourglass,
@@ -48,6 +50,11 @@ export default async function Page({
     <div className="mx-auto w-full max-w-md px-4 py-10">
       <EmptyState icon={Icon} title={view.title} description={view.body} className="py-4">
         <div className="flex flex-wrap justify-center gap-2">
+          {isIntroducer && state !== "declined" && (
+            <Button size="sm" href={`/${locale}/introducer`}>
+              Open your workspace
+            </Button>
+          )}
           <Button variant="secondary" size="sm" href={`/${locale}`}>
             Back to home
           </Button>

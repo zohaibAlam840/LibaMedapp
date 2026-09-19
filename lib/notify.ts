@@ -171,3 +171,49 @@ Sign in to review it and accept it for review.`,
     path: `/${locale}/login`,
   }));
 }
+
+/**
+ * Tell the introducer what a UK clinician did with the case they raised.
+ *
+ * Not preference-gated: an introducer has exactly two things to hear about, and
+ * both are the answer to something they asked for. Like every other email here
+ * it carries the reference and the outcome, never clinical content.
+ */
+export async function notifyCosignOutcome(
+  ref: string,
+  outcome: "signed" | "declined",
+  clinicianName: string,
+  note: string,
+  locale = "en",
+): Promise<void> {
+  try {
+    const sb = supabaseAdmin();
+    const { data } = await sb
+      .from("referrals")
+      .select("ref, introducer:introducer_user_id(name, email)")
+      .eq("ref", ref)
+      .maybeSingle();
+    const row = data as { ref: string; introducer: { name: string; email: string | null } | null } | null;
+    const email = row?.introducer?.email;
+    if (!email) return;
+
+    await sendEmail({
+      to: email,
+      subject:
+        outcome === "signed"
+          ? `${row!.ref} — co-signed and sent`
+          : `${row!.ref} — sent back to you`,
+      body:
+        outcome === "signed"
+          ? `${clinicianName} has co-signed case ${row!.ref}. It has been sent to the receiving hospital and is now a live referral.`
+          : `${clinicianName} has sent case ${row!.ref} back to you rather than co-signing it.
+
+Reason given: ${note || "none recorded"}
+
+It is a draft again, so you can revise it and submit it for co-sign once more.`,
+      action: { label: "Open the case", url: `${siteUrl()}/${locale}/login` },
+    });
+  } catch (e) {
+    console.warn("[notify] cosign outcome failed (non-fatal):", (e as Error)?.message);
+  }
+}

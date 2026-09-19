@@ -300,3 +300,153 @@ export async function insertDocument(ref: string, d: NewDocument): Promise<boole
   await sb.from("referrals").update({ updated_at: new Date().toISOString() }).eq("id", id);
   return true;
 }
+
+// ── Introducer origination + co-sign (migration 006) ───────────────────────
+
+export interface OriginationInput {
+  patientRef: string;
+  corridorId: string;
+  hospitalId?: string | null;
+  specialty?: string | null;
+  treatmentScope?: string | null;
+  clinicalSummary?: string | null;
+  urgency?: string | null;
+}
+
+/**
+ * Open a DRAFT case for an introducer.
+ *
+ * `referring_user_id` is left null on purpose: a draft has no referring
+ * clinician yet, and inventing one would put a clinician's name against a
+ * clinical decision they have not made. It is set by the co-sign.
+ */
+export async function insertOriginatedCase(
+  introducerProfileId: string,
+  input: OriginationInput,
+): Promise<string> {
+  const ref = await nextReferralRef();
+  const { error } = await supabaseAdmin()
+    .from("referrals")
+    .insert({
+      ref,
+      patient_ref: input.patientRef,
+      corridor_id: input.corridorId,
+      hospital_id: input.hospitalId ?? null,
+      specialty: input.specialty ?? null,
+      treatment_scope: input.treatmentScope ?? null,
+      clinical_summary: input.clinicalSummary ?? null,
+      urgency: input.urgency ?? null,
+      status: "draft",
+      cosign_state: "not-required",
+      introducer_user_id: introducerProfileId,
+      referring_user_id: null,
+    });
+  if (error) throw error;
+  return ref;
+}
+
+/** Edit a draft. Refuses once the case has left the introducer's hands. */
+export async function updateOriginatedCase(
+  ref: string,
+  introducerProfileId: string,
+  input: OriginationInput,
+): Promise<boolean> {
+  const { data, error } = await supabaseAdmin()
+    .from("referrals")
+    .update({
+      patient_ref: input.patientRef,
+      corridor_id: input.corridorId,
+      hospital_id: input.hospitalId ?? null,
+      specialty: input.specialty ?? null,
+      treatment_scope: input.treatmentScope ?? null,
+      clinical_summary: input.clinicalSummary ?? null,
+      urgency: input.urgency ?? null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("ref", ref)
+    .eq("introducer_user_id", introducerProfileId)
+    .eq("status", "draft")
+    .select("ref")
+    .maybeSingle();
+  if (error) throw error;
+  return Boolean(data);
+}
+
+/** draft → awaiting-cosign. The `.eq("status","draft")` is the state machine. */
+export async function submitForCosign(ref: string, introducerProfileId: string): Promise<boolean> {
+  const { data, error } = await supabaseAdmin()
+    .from("referrals")
+    .update({
+      status: "awaiting-cosign",
+      cosign_state: "awaited",
+      cosign_note: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("ref", ref)
+    .eq("introducer_user_id", introducerProfileId)
+    .eq("status", "draft")
+    .select("ref")
+    .maybeSingle();
+  if (error) throw error;
+  return Boolean(data);
+}
+
+/**
+ * A UK clinician signs: the case becomes an ordinary submitted referral and
+ * THEY become the referrer of record. Guarded on `cosign_state = 'awaited'` so
+ * two clinicians opening the queue at once cannot both sign the same case.
+ */
+export async function applyCosign(
+  ref: string,
+  clinicianProfileId: string,
+  nsReason: string,
+  nsJustification: string,
+  clinicianName: string,
+): Promise<boolean> {
+  const now = new Date().toISOString();
+  const { data, error } = await supabaseAdmin()
+    .from("referrals")
+    .update({
+      status: "submitted",
+      cosign_state: "signed",
+      cosigned_by: clinicianProfileId,
+      cosigned_at: now,
+      referring_user_id: clinicianProfileId,
+      ns_reason: nsReason,
+      ns_justification: nsJustification,
+      ns_declared_by: clinicianName,
+      ns_declared_at: now,
+      updated_at: now,
+    })
+    .eq("ref", ref)
+    .eq("cosign_state", "awaited")
+    .select("ref")
+    .maybeSingle();
+  if (error) throw error;
+  return Boolean(data);
+}
+
+/** Declined: back to the introducer as a draft, with the reason attached. */
+export async function declineCosign(
+  ref: string,
+  clinicianProfileId: string,
+  note: string,
+): Promise<boolean> {
+  const now = new Date().toISOString();
+  const { data, error } = await supabaseAdmin()
+    .from("referrals")
+    .update({
+      status: "draft",
+      cosign_state: "declined",
+      cosigned_by: clinicianProfileId,
+      cosigned_at: now,
+      cosign_note: note,
+      updated_at: now,
+    })
+    .eq("ref", ref)
+    .eq("cosign_state", "awaited")
+    .select("ref")
+    .maybeSingle();
+  if (error) throw error;
+  return Boolean(data);
+}

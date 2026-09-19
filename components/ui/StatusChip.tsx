@@ -6,6 +6,8 @@ import { CASE_STATUS_LABELS, type CaseStatus } from "@/lib/caseStatus";
  * h 26, px 10, 12px/600, 6px leading dot + label. Never colour alone.
  */
 const STYLES: Record<CaseStatus, string> = {
+  draft: "bg-[#F3F4F6] text-[#6B7280]",
+  "awaiting-cosign": "bg-[#FEF3C7] text-[#B45309]",
   submitted: "bg-[#F1F5F9] text-[#64748B]",
   "under-review": "bg-[#FEF3C7] text-[#B45309]",
   "plan-received": "bg-[#DBEAFE] text-[#2563EB]",

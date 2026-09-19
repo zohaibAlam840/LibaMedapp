@@ -9,6 +9,7 @@ import { ROLE_LABEL } from "@/lib/rbac";
 import { DEMO_ROLE_SIDEBAR_COOKIE } from "@/lib/demoRole";
 import { navBadgesFor } from "@/lib/nav";
 import { getCases } from "@/lib/db/referrals";
+import { getCosignQueue } from "@/lib/db/cosign";
 
 // Authenticated app shell (Vol III §0.2): one app, three experiences by role.
 // Access is now gated by a real Supabase session — non-clinicians and
@@ -46,6 +47,13 @@ export default async function AppLayout({
   // Sidebar counts are per user, so they are computed here from the caller's
   // own scoped cases rather than baked into the nav table.
   const badges = navBadgesFor(role, await getCases(user));
+  // The co-sign queue is deliberately outside the case scope — these cases are
+  // not yet anyone's — so its count is merged in here rather than derived from
+  // the caller's own cases.
+  if (role === "referring") {
+    const waiting = (await getCosignQueue(user)).length;
+    if (waiting > 0) badges["/referring/cosign"] = waiting;
+  }
 
   return (
     <div className="flex min-h-dvh">
