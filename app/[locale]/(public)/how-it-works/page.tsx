@@ -127,9 +127,9 @@ export default async function Page({
           Back to UK care within 5 working days
         </h2>
         <p className="mx-auto mt-3 max-w-[55ch] text-[15px] leading-relaxed text-ink-secondary">
-          When treatment completes, the clock starts. The receiving specialist's
+          When treatment completes, the clock starts. The receiving specialist&rsquo;s
           structured summary — treatment given, outcome, medications, follow-up —
-          reaches the referring clinician within five working days. It's a
+          reaches the referring clinician within five working days. It&rsquo;s a
           Pledge commitment, and the platform tracks it on every case.
         </p>
       </section>

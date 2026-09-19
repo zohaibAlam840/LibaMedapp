@@ -57,8 +57,8 @@ export default async function Page({
             <h2 className="text-2xl font-semibold text-ink">GMC verification at sign-up</h2>
           </div>
           <p className="mb-10 max-w-[60ch] text-[15px] text-ink-secondary">
-            Every referrer is a verified doctor — that's the platform's first
-            promise. Here's what happens when you register:
+            Every referrer is a verified doctor — that&rsquo;s the platform&rsquo;s first
+            promise. Here&rsquo;s what happens when you register:
           </p>
           <NumberedStepStrip
             steps={[

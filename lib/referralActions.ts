@@ -199,7 +199,9 @@ export async function uploadIntakeFileAction(
   if (!user) return { ok: false, error: "Your session has expired — please sign in again." };
 
   const file = formData.get("file");
-  const docType = String(formData.get("docType") || "Document");
+  // The document TYPE is not read here: the intake draft already carries it and
+  // passes it to insertDocument on submit. Reading it again gave a variable
+  // nothing used, which reads like the type is being stored and it is not.
   if (!(file instanceof File) || file.size === 0) return { ok: false, error: "Choose a file." };
   if (file.size > 50 * 1024 * 1024) return { ok: false, error: "File is too large (50 MB max)." };
 

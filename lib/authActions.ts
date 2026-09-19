@@ -2,7 +2,6 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers";
 import { supabaseServer } from "@/lib/supabase/server";
 import { clearSupabaseCookies } from "@/lib/supabase/cookies";
 import { supabaseAdmin } from "@/lib/supabase/admin";
