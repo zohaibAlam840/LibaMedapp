@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getSessionUser } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { appendAudit, canAccessCase, canWriteCase } from "@/lib/db/referrals";
+import { appendAudit, canAccessCase, canWriteCase, getCase } from "@/lib/db/referrals";
 import { notifyNewMessage, notifyNewReferral, notifyStatusChange } from "@/lib/notify";
 import {
   DOCUMENTS_BUCKET,
@@ -15,7 +15,7 @@ import {
   withdrawConsent,
   type NewReferral,
 } from "@/lib/db/write";
-import { CASE_STATUS_LABELS, type CaseStatus } from "@/lib/caseStatus";
+import { CASE_STATUS_LABELS, transitionOwner, type CaseStatus } from "@/lib/caseStatus";
 
 // Server actions for every clinician-side WRITE. Each one authenticates via the
 // session, performs the mutation through the service client, appends an
@@ -83,6 +83,26 @@ export async function advanceStatusAction(formData: FormData): Promise<void> {
   const event = String(formData.get("event") || `Status → ${CASE_STATUS_LABELS[status] ?? status}`);
   if (!ref || !status) return;
   if (!(await canWriteCase(ref, user))) return;
+
+  // WHICH moves this person may make, not just which cases they may touch.
+  // Writing the case is not the same as owning the step: the referring
+  // clinician can write their own case, so without this they could accept it
+  // on the hospital's behalf — and the audit log would say the hospital did.
+  const current = await getCase(ref, user);
+  if (!current) return;
+  const owner = transitionOwner(current.status, status);
+  if (owner) {
+    const permitted =
+      owner === "receiving"
+        ? user.role === "receiving" || user.role === "coordinator" || user.role === "admin"
+        : user.role === "referring" || user.role === "admin";
+    if (!permitted) {
+      console.warn(
+        `[action] advanceStatus refused: ${user.role} may not make the ${owner} move ${current.status} → ${status} on ${ref}`,
+      );
+      return;
+    }
+  }
 
   try {
     const ok = await updateReferralStatus(ref, status);
