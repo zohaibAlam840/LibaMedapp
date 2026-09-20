@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="LibaMed">
+  <!-- The LM roundel the app already uses in its header and sidebar (accent
+       #3b82d6 on white). The monogram is drawn as paths rather than <text> so
+       it renders identically everywhere — a favicon cannot rely on a font
+       being available. -->
+  <circle cx="32" cy="32" r="32" fill="#3b82d6"/>
+  <path d="M15,22 h5 v15 h8 v5 h-13 z" fill="#fff"/>
+  <path d="M30,42 v-20 h4 l6,10 l6,-10 h4 v20 h-5 v-11 l-5,8 l-5,-8 v11 z" fill="#fff"/>
+</svg>
