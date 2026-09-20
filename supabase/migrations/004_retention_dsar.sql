@@ -1,16 +1,4 @@
--- Migration 004 — data-subject requests (DSAR) + retention
---
--- Under UK GDPR a patient may demand a copy of everything held about them, ask
--- for it to be corrected, or ask for it to be erased — and you must respond
--- within ONE MONTH. This adds the log, the clock, and the retention rules.
---
--- Paste this whole file into the Supabase SQL editor and run it once.
--- Safe to re-run (everything is IF NOT EXISTS / idempotent).
 
--- ── Corridor retention periods ─────────────────────────────────────────────
--- How long a corridor's records must be kept before deletion. France requires
--- 20 years for health records; most others 10. Set per corridor because the
--- strictest rule of the two countries always wins.
 alter table corridors add column if not exists retention_years integer not null default 10;
 
 update corridors set retention_years = 20 where id = 'france' and retention_years = 10;
