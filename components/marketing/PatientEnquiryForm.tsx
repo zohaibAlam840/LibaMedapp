@@ -115,7 +115,11 @@ export default function PatientEnquiryForm() {
               placeholder="SW1A 1AA"
             />
           </Field>
-          <Field label="Age range" htmlFor="p-age">
+          <Field
+            label="Patient’s age range"
+            htmlFor="p-age"
+            hint="If you’re asking on behalf of someone else, give their age, not yours."
+          >
             <Select id="p-age" name="ageRange" defaultValue="">
               <option value="">Prefer not to say</option>
               {AGE_RANGES.map((a) => (
@@ -135,7 +139,7 @@ export default function PatientEnquiryForm() {
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Area of care" htmlFor="p-specialty">
             <Select id="p-specialty" name="specialtyArea" defaultValue="">
-              <option value="">Not sure</option>
+              <option value="">Select…</option>
               {SPECIALTY_AREAS.map((s) => (
                 <option key={s} value={s}>
                   {s}
@@ -182,7 +186,7 @@ export default function PatientEnquiryForm() {
             hint="A range is fine — it helps us point you sensibly."
           >
             <Select id="p-budget" name="budgetBand" defaultValue="">
-              <option value="">Prefer not to say</option>
+              <option value="">Select…</option>
               {BUDGET_BANDS.map((b) => (
                 <option key={b} value={b}>
                   {b}

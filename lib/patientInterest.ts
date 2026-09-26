@@ -8,19 +8,20 @@
 // enquiries keep the label they were captured with, and OPTION_LABEL falls
 // back to the stored value for anything no longer offered.
 //
-// PLACEHOLDER VALUES: the bands below are a reasonable starting set, pending
-// the client's own lists. Swapping them is this file and nothing else.
+// The specialty areas, age ranges and budget bands below are the client's own
+// wording, supplied 27 Sep 2026, and are used verbatim — they are the
+// categories her campaign reporting is built around. Destination preferences
+// and timeframes were not specified and remain ours.
 
-export const AGE_RANGES = ["18–29", "30–44", "45–59", "60–74", "75+"] as const;
+export const AGE_RANGES = ["Under 18", "18–40", "41–60", "61–75", "76+"] as const;
 
 export const SPECIALTY_AREAS = [
-  "Orthopaedics",
+  "Oncology & second opinions",
+  "Orthopaedics (non-routine/complex)",
   "Cardiology",
-  "Oncology",
-  "Neurology",
+  "Neurology/neurosurgery",
   "Fertility",
-  "Ophthalmology",
-  "Other / not sure",
+  "Other specialist care",
 ] as const;
 
 export const DESTINATIONS = [
@@ -37,12 +38,11 @@ export const FUNDING_TYPES = [
 ] as const;
 
 export const BUDGET_BANDS = [
-  "Under £5,000",
-  "£5,000 – £15,000",
-  "£15,000 – £30,000",
-  "£30,000 – £50,000",
-  "Over £50,000",
-  "Not sure yet",
+  "Under £10k",
+  "£10k–£25k",
+  "£25k–£50k",
+  "£50k+",
+  "Prefer not to say / insurance-funded",
 ] as const;
 
 export const TIMEFRAMES = [

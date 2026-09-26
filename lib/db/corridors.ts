@@ -108,7 +108,9 @@ export async function getCorridors(): Promise<CorridorRecord[]> {
     ]);
     if (error) throw error;
     const rows = (data as unknown as Row[]) ?? [];
-    if (rows.length === 0) return CORRIDOR_LIST.map(fromConfig);
+    // An empty table is not a reason to publish the code registry. Before the
+    // seed has run there are genuinely no corridors, and saying so is correct.
+    if (rows.length === 0) return [];
 
     const byCorridor = new Map<string, CorridorSpecialty[]>();
     for (const s of (specs as unknown as SpecialtyRow[]) ?? []) {
@@ -121,8 +123,15 @@ export async function getCorridors(): Promise<CorridorRecord[]> {
       .map((r, i) => mapRow(r, i, (byCorridor.get(r.id) ?? []).sort((a, b) => a.name.localeCompare(b.name))))
       .sort((a, b) => a.displayOrder - b.displayOrder || a.label.localeCompare(b.label));
   } catch (e) {
-    console.warn("[db] getCorridors → code registry:", (e as Error)?.message);
-    return CORRIDOR_LIST.map(fromConfig);
+    // FAIL CLOSED, matching getHospitals. The registry entries are marked
+    // published, so returning them here meant a single failed read — a
+    // transient error during a Vercel build, say — would put every corridor in
+    // lib/corridors.ts on the public site and cache it that way. Israel is in
+    // that registry and is an unsigned LOI; Türkiye is in it and is not ready
+    // to take enquiries. An empty corridors page is a visible, harmless
+    // failure. A page advertising corridors nobody has contracted is not.
+    console.warn("[db] getCorridors failed — returning none:", (e as Error)?.message);
+    return [];
   }
 }
 
