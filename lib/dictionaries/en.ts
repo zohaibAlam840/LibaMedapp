@@ -3,6 +3,7 @@ import type { Dictionary } from "./types";
 export const en: Dictionary = {
   nav: {
     forClinicians: "For clinicians",
+    forPatients: "For patients",
     pledge: "The Pledge",
     hospitals: "Hospitals",
     corridors: "Corridors",

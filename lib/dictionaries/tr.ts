@@ -3,6 +3,7 @@ import type { Dictionary } from "./types";
 export const tr: Dictionary = {
   nav: {
     forClinicians: "Klinisyenler için",
+    forPatients: "Hastalar için",
     pledge: "Taahhüt",
     hospitals: "Hastaneler",
     corridors: "Koridorlar",

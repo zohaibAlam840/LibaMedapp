@@ -22,6 +22,7 @@ export interface QA {
 export interface Dictionary {
   nav: {
     forClinicians: string;
+    forPatients: string;
     pledge: string;
     hospitals: string;
     corridors: string;
