@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local QA scratch (Playwright harnesses, server logs)
+.s.log
+.b.log
+.t*.mjs
+.p*.mjs
