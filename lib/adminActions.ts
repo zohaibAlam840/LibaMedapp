@@ -245,8 +245,19 @@ export async function updateDoctorAction(formData: FormData): Promise<void> {
 /* ── Corridors ──────────────────────────────────────────────────────────── */
 
 /** Slugify a corridor label into a stable id: "UK → Spain" → "spain". */
+// Letters that carry no combining mark, so NFD leaves them whole and the
+// [^a-z0-9] sweep below would simply delete them. Turkish dotless ı is the one
+// that bites here: "Acıbadem" slugged to "ac-badem", which then became the
+// hospital's id and its public URL.
+const TRANSLITERATE: Record<string, string> = {
+  "ı": "i", "İ": "i", "ø": "o", "Ø": "o", "ł": "l", "Ł": "l",
+  "đ": "d", "Đ": "d", "ß": "ss", "æ": "ae", "Æ": "ae", "œ": "oe", "Œ": "oe",
+  "þ": "th", "Þ": "th", "ð": "d", "Ð": "d",
+};
+
 function slugify(s: string): string {
   return s
+    .replace(/[^\x00-\x7F]/g, (ch) => TRANSLITERATE[ch] ?? ch)
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "")
     .toLowerCase()
@@ -384,12 +395,20 @@ export async function updateCorridorAction(formData: FormData): Promise<void> {
   const locale = String(formData.get("locale") || "en");
   if (!id) return;
 
+  // primary_hospital_id is editable here as well as at creation. It was
+  // create-only, which meant a corridor whose partner changed — Türkiye moving
+  // from Anadolu to Acıbadem — could not be corrected from the admin screens at
+  // all, and the old partner kept being named on the public corridor card.
+  // "" is a real choice (no partner yet), so it is stored as null rather than
+  // skipped.
+  const hospitalId = String(formData.get("primaryHospitalId") ?? "").trim();
   const patch = {
     label: String(formData.get("label") || "").trim(),
     country: String(formData.get("country") || "").trim(),
     residency: String(formData.get("residency") || "").trim(),
     safeguard: String(formData.get("safeguard") || "").trim(),
     published: formData.get("published") === "on",
+    primary_hospital_id: hospitalId || null,
   };
 
   try {
@@ -398,11 +417,14 @@ export async function updateCorridorAction(formData: FormData): Promise<void> {
     await appendAdminAudit(
       user.name,
       "Corridor updated",
-      `${patch.label || id} · ${patch.published ? "published" : "hidden"}`,
+      `${patch.label || id} · ${patch.published ? "published" : "hidden"} · partner: ${patch.primary_hospital_id ?? "none"}`,
     );
     revalidatePath(`/${locale}/admin/corridors`);
     revalidatePath(`/${locale}`);
     revalidatePath(`/${locale}/hospitals`);
+    // The public corridor cards name the partner hospital, so they have to be
+    // rebuilt too or the old name survives the change.
+    revalidatePath(`/${locale}/corridors`);
   } catch (e) {
     console.warn("[action] updateCorridor failed:", (e as Error)?.message);
   }

@@ -54,6 +54,7 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
             code={corridorCode(c)}
             locale={locale}
             canEdit={canEdit}
+            hospitals={hospitals.map((h) => ({ id: h.id, name: h.name, published: h.published }))}
           />
         ))}
       </div>

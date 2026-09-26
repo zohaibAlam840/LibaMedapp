@@ -1,14 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Globe2, Lock, Pencil, Trash2, X } from "lucide-react";
+import { Building2, Globe2, Lock, Pencil, Trash2, X } from "lucide-react";
 import { Card, CardTitle } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import SubmitButton from "@/components/ui/SubmitButton";
 import Toggle from "@/components/ui/Toggle";
 import Chip from "@/components/ui/Chip";
 import DetailPanelRow from "@/components/ui/DetailPanelRow";
-import { Field, Input, Textarea } from "@/components/ui/Field";
+import { Field, Input, Select, Textarea } from "@/components/ui/Field";
 import { CorridorBadge } from "@/components/ui/Badges";
 import SpecialtyEditor from "@/components/admin/SpecialtyEditor";
 import {
@@ -29,12 +29,16 @@ export default function CorridorEditCard({
   code,
   locale,
   canEdit,
+  hospitals,
 }: {
   corridor: CorridorRecord;
   code: string;
   locale: string;
   canEdit: boolean;
+  /** Every hospital on record — the partner may legitimately be unpublished. */
+  hospitals: { id: string; name: string; published: boolean }[];
 }) {
+  const partner = hospitals.find((h) => h.id === corridor.primaryHospitalId);
   const [editing, setEditing] = useState(false);
 
   if (!editing) {
@@ -59,6 +63,20 @@ export default function CorridorEditCard({
           </span>
         </CardTitle>
         <div className="divide-y divide-line">
+          <DetailPanelRow
+            icon={Building2}
+            label="Partner hospital"
+            value={
+              partner ? (
+                <span className={partner.published ? undefined : "text-warning-text"}>
+                  {partner.name}
+                  {!partner.published && " · hidden from the public site"}
+                </span>
+              ) : (
+                <span className="text-ink-muted">None set</span>
+              )
+            }
+          />
           <DetailPanelRow icon={Globe2} label="Data residency" value={corridor.residency} />
           <DetailPanelRow
             icon={Globe2}
@@ -130,6 +148,25 @@ export default function CorridorEditCard({
             <Input id={`c-country-${corridor.id}`} name="country" defaultValue={corridor.country} />
           </Field>
         </div>
+        <Field
+          label="Partner hospital"
+          htmlFor={`c-hosp-${corridor.id}`}
+          hint="Named on the public corridor card. Change this when a partner is replaced."
+        >
+          <Select
+            id={`c-hosp-${corridor.id}`}
+            name="primaryHospitalId"
+            defaultValue={corridor.primaryHospitalId ?? ""}
+          >
+            <option value="">No partner yet</option>
+            {hospitals.map((h) => (
+              <option key={h.id} value={h.id}>
+                {h.name}
+                {h.published ? "" : " (hidden)"}
+              </option>
+            ))}
+          </Select>
+        </Field>
         <Field label="Data residency" htmlFor={`c-res-${corridor.id}`}>
           <Input id={`c-res-${corridor.id}`} name="residency" defaultValue={corridor.residency} />
         </Field>

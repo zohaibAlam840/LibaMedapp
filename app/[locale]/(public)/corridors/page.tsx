@@ -22,7 +22,12 @@ export default async function Page({
 }) {
   const { locale } = await params;
   const [corridors, hospitals] = await Promise.all([getPublishedCorridors(), getHospitals()]);
-  const hospitalName = (id?: string) => hospitals.find((h) => h.id === id)?.name;
+  // Only a PUBLISHED hospital may be named here. getHospitals() returns every
+  // record, so without this filter un-publishing a partner hid it from
+  // /hospitals while its name went on being printed on the corridor card —
+  // which is not what "removed from the public site" means to anyone.
+  const hospitalName = (id?: string) =>
+    hospitals.find((h) => h.id === id && h.published)?.name;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-12 md:px-8">
