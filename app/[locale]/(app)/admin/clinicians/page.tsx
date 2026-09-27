@@ -1,3 +1,4 @@
+import { requireOversight } from "@/lib/auth";
 import { Star, Stethoscope } from "lucide-react";
 import { Card, CardTitle } from "@/components/ui/Card";
 import Avatar from "@/components/ui/Avatar";
@@ -20,6 +21,7 @@ const STATUS_TONE: Record<string, string> = {
 
 export default async function Page({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
+  await requireOversight(locale);
   const [doctors, hospitals] = await Promise.all([getAllDoctors(), getHospitals()]);
 
   return (

@@ -11,11 +11,6 @@ import { cn } from "@/lib/cn";
 
 const DOC_TYPES = ["Referral letter", "Lab results", "Imaging — DICOM", "Histopathology", "Other"];
 
-function humanSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-}
 
 // Intake step 5 — documents. Files are selected here and their metadata staged
 // in the draft; document rows are written when the referral is created. (Real

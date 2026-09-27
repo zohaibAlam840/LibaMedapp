@@ -1,7 +1,7 @@
 import { Lock, ShieldAlert, ShieldCheck } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import AuditBrowser from "@/components/admin/AuditBrowser";
-import { getSessionUser } from "@/lib/auth";
+import { requireOversight } from "@/lib/auth";
 import { auditCsv, getAuditEvents, verifyAuditChain } from "@/lib/db/audit";
 
 // 9E · Audit log viewer (#57) — acceptance §14.9.
@@ -16,9 +16,13 @@ import { auditCsv, getAuditEvents, verifyAuditChain } from "@/lib/db/audit";
 // Newest slice loaded per visit; the browser filters within it.
 const LIMIT = 200;
 
-export default async function Page() {
-  const [user, page, chain] = await Promise.all([
-    getSessionUser(),
+export default async function Page({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  // Sequential, not inside the Promise.all below: the whole point is that no
+  // audit row is read until the caller has been authorised.
+  const user = await requireOversight(locale);
+
+  const [page, chain] = await Promise.all([
     getAuditEvents({ limit: LIMIT }),
     verifyAuditChain(),
   ]);

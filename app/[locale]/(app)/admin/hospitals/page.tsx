@@ -1,3 +1,4 @@
+import { requireOversight } from "@/lib/auth";
 import Link from "next/link";
 import { Building2, Plus } from "lucide-react";
 import { Card, CardTitle } from "@/components/ui/Card";
@@ -21,6 +22,7 @@ export default async function Page({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+  await requireOversight(locale);
   const hospitals = await getHospitals();
   const live = hospitals.filter((h) => h.published).length;
 

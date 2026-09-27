@@ -1,3 +1,4 @@
+import { requireOversight } from "@/lib/auth";
 import { Archive, Clock, Inbox, ShieldCheck } from "lucide-react";
 import { Card, CardTitle } from "@/components/ui/Card";
 import EmptyState from "@/components/ui/EmptyState";
@@ -20,6 +21,7 @@ export default async function Page({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+  await requireOversight(locale);
   const [requests, schedule, policy] = await Promise.all([
     getDataRequests(),
     getRetentionSchedule(),

@@ -1,4 +1,5 @@
 import "server-only";
+import { redirect } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import type { Role } from "@/lib/rbac";
@@ -162,4 +163,51 @@ export async function needsMfaChallenge(): Promise<boolean> {
     // Never lock a clinician out because the check itself failed.
     return false;
   }
+}
+
+/**
+ * Page-level authorisation guards.
+ *
+ * WHY THESE EXIST, given the route-group layouts already guard the same paths.
+ *
+ * In the App Router a layout and the page beneath it render CONCURRENTLY. The
+ * layout's `redirect()` does not prevent the page's own body from running, so a
+ * page that fetched with the service client had already produced its HTML by
+ * the time the redirect was raised — and Next flushed that HTML as the body of
+ * the 307. An anonymous `curl` that ignored the Location header could read it.
+ * Measured on 2026-09-27: /admin/users returned 15 registered email addresses
+ * and a GMC number, /admin/verification the registrant queue, and /admin/audit
+ * the whole hash-chained log, all with no session at all.
+ *
+ * Role-scoped pages were never exposed this way, because their queries take a
+ * SessionProfile and resolve to nothing without one. The exposure is specific
+ * to pages that read with the service key on the platform's behalf.
+ *
+ * So these must be AWAITED BEFORE the first data fetch in the page body. Awaited
+ * first, the redirect is raised before any privileged read is issued and there is
+ * nothing to leak. A guard placed after a fetch, or run inside Promise.all
+ * alongside one, does not close this.
+ */
+export async function requireOversight(locale: string): Promise<SessionProfile> {
+  const user = await getSessionUser();
+  if (!user) redirect(`/${locale}/login`);
+  if (user.accountType !== "clinician" || (user.role !== "admin" && user.role !== "caseManager")) {
+    redirect(landingPath(locale, user));
+  }
+  if (user.accountStatus !== "verified") {
+    redirect(`/${locale}/account-pending?status=${user.accountStatus}`);
+  }
+  return user;
+}
+
+/** Oversight AND the named capability, for the pages Vol III §0.4 restricts further. */
+export async function requireCapability(
+  locale: string,
+  capability: "canManageUsers" | "canExportAudit" | "canEditCorridors",
+): Promise<SessionProfile> {
+  const user = await requireOversight(locale);
+  // An admin is not automatically granted these — the flags are the policy, and
+  // a caseManager reaching an oversight page is exactly who they exclude.
+  if (!user[capability]) redirect(landingPath(locale, user));
+  return user;
 }

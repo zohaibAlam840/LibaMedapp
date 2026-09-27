@@ -1,3 +1,4 @@
+import { requireOversight } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import { Card, CardTitle } from "@/components/ui/Card";
 import HospitalEditForm, { HospitalDeleteForm } from "@/components/admin/HospitalEditForm";
@@ -14,6 +15,7 @@ export default async function Page({
   params: Promise<{ locale: string; hospitalId: string }>;
 }) {
   const { locale, hospitalId } = await params;
+  await requireOversight(locale);
   const h = await getHospital(hospitalId);
   if (!h) notFound();
 

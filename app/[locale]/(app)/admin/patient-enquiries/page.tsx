@@ -1,3 +1,4 @@
+import { requireOversight } from "@/lib/auth";
 import Link from "next/link";
 import { HeartHandshake, TriangleAlert } from "lucide-react";
 import { Card, CardTitle } from "@/components/ui/Card";
@@ -30,6 +31,7 @@ export default async function Page({
 }) {
   const { locale } = await params;
   const { status, campaign } = await searchParams;
+  await requireOversight(locale);
   const ready = await interestReady();
 
   const active = (INTEREST_STATUSES as readonly string[]).includes(status ?? "")

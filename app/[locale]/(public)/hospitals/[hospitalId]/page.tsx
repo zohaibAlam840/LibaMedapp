@@ -19,7 +19,16 @@ export default async function Page({
 }) {
   const { locale, hospitalId } = await params;
   const h = await getHospital(hospitalId);
-  if (!h) notFound();
+  // Unpublished hospitals 404, exactly as unpublished corridors do. Checking
+  // only for existence made every hospital in the table reachable by direct
+  // URL: the index listed Hirslanden alone, but /hospitals/sheba,
+  // /hospitals/anadolu and /hospitals/acibadem-healthcare-group all returned a
+  // full profile. `published` is how the client stages a partner that is agreed
+  // in the backend but not yet contracted to be shown — Acıbadem is unpublished
+  // precisely because its fee terms are still open — so serving one unlisted
+  // but reachable announced a commercial relationship that does not exist yet,
+  // to anyone guessing the slug or following a crawler.
+  if (!h || !h.published) notFound();
   // Admin-approved doctors (migration 002); falls back to the hospital record's
   // own clinician list when the directory hasn't been populated yet.
   const doctors = await getHospitalDoctors(hospitalId);

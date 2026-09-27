@@ -12,7 +12,7 @@ import { supabaseBrowser } from "@/lib/supabase/client";
  * level (aal1 → aal2), which is what the app checks before letting a
  * two-factor account reach patient data.
  */
-export default function MfaChallenge({ locale, next }: { locale: string; next: string }) {
+export default function MfaChallenge({ next }: { next: string }) {
   const supabase = supabaseBrowser();
   const router = useRouter();
 

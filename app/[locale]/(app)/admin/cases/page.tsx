@@ -1,3 +1,4 @@
+import { requireOversight } from "@/lib/auth";
 import Link from "next/link";
 import { Card, CardTitle, SectionLabel } from "@/components/ui/Card";
 import Checkbox from "@/components/ui/Checkbox";
@@ -18,6 +19,7 @@ export default async function Page({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+  await requireOversight(locale);
   const cases = await getCases();
 
   return (

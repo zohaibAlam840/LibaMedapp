@@ -67,9 +67,18 @@ export function IntakeProvider({ children }: { children: React.ReactNode }) {
   const loaded = useRef(false);
 
   // Load once on mount (client only — avoids SSR/hydration mismatch).
+  //
+  // set-state-in-effect is disabled deliberately here. localStorage cannot be
+  // read during the server render, so a saved draft is genuinely external state
+  // that only arrives after mount — the case the rule's own documentation
+  // describes as legitimate. The alternative, a lazy useState initialiser,
+  // would make the first client render disagree with the server HTML and cause
+  // a hydration mismatch on every restored field. One extra render on mount is
+  // the cheaper trade.
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (raw) setData({ ...EMPTY, ...(JSON.parse(raw) as Partial<IntakeData>) });
     } catch {
       /* ignore corrupt draft */

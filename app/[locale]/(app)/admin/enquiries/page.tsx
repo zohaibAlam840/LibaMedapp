@@ -1,3 +1,4 @@
+import { requireOversight } from "@/lib/auth";
 import { Inbox } from "lucide-react";
 import { Card, CardTitle } from "@/components/ui/Card";
 import EmptyState from "@/components/ui/EmptyState";
@@ -16,6 +17,7 @@ export default async function Page({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+  await requireOversight(locale);
   const messages = await getContactMessages();
 
   const open = messages.filter((m) => m.status === "new" || m.status === "read");

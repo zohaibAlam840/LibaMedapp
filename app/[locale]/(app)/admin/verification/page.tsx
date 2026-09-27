@@ -1,3 +1,4 @@
+import { requireOversight } from "@/lib/auth";
 import { BadgeCheck, Info } from "lucide-react";
 import { Card, CardTitle } from "@/components/ui/Card";
 import EmptyState from "@/components/ui/EmptyState";
@@ -14,6 +15,7 @@ export default async function Page({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+  await requireOversight(locale);
   const all = await getRegistrations();
   const pending = all.filter((a) => a.status === "pending");
   const decided = all.filter((a) => a.status !== "pending").slice(0, 20);

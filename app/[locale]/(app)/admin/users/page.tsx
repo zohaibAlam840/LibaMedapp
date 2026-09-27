@@ -7,6 +7,7 @@ import InviteUserForm from "@/components/admin/InviteUserForm";
 import UserAssignmentForm from "@/components/admin/UserAssignmentForm";
 import ResetPasswordButton from "@/components/admin/ResetPasswordButton";
 import { ROLE_LABEL } from "@/lib/rbac";
+import { requireCapability } from "@/lib/auth";
 import { getUsers } from "@/lib/db/users";
 import { getHospitals } from "@/lib/db/hospitals";
 
@@ -47,6 +48,9 @@ function hospitalName(
 
 export default async function Page({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
+  // Awaited BEFORE the reads below — see requireCapability for why the admin
+  // layout alone did not stop this page rendering for anonymous callers.
+  await requireCapability(locale, "canManageUsers");
   const [users, hospitals] = await Promise.all([getUsers(), getHospitals()]);
 
   return (

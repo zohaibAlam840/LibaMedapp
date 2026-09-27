@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import { FolderLock, Search } from "lucide-react";
 import { Card, CardTitle, SectionLabel } from "@/components/ui/Card";
 import Checkbox from "@/components/ui/Checkbox";

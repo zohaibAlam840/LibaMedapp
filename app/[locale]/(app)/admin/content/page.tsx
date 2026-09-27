@@ -1,3 +1,4 @@
+import { requireOversight } from "@/lib/auth";
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import { FaqEditor, GlossaryEditor } from "@/components/admin/ContentEditor";
@@ -17,6 +18,7 @@ export default async function Page({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+  await requireOversight(locale);
   const [faqs, glossary, editable] = await Promise.all([
     getFaqItems(true),
     getGlossaryTerms(true),
