@@ -54,7 +54,12 @@ function shell({ subject, body, action, footnote }: Omit<SendArgs, "to">): strin
     ? `<p style="margin:24px 0 0;padding-top:16px;border-top:1px solid #e2e8f2;font-size:12px;line-height:1.6;color:#8b93a8">${footnote}</p>`
     : "";
 
-  return `<!doctype html><html><body style="margin:0;background:#f6f8fb;padding:32px 16px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
+  // The charset meta is not decoration. Without it a mail client is free to
+  // guess the encoding, and several guess latin-1 — which turns every pound
+  // sign, en dash and accented hospital name into a replacement character.
+  // "Hirslanden Zürich", "Acıbadem" and the budget bands ("£10k–£25k") all
+  // carry non-ASCII, so this affects real content, not edge cases.
+  return `<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0;background:#f6f8fb;padding:32px 16px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
   <div style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #e2e8f2;border-radius:12px;padding:32px">
     <div style="margin-bottom:24px;font-size:17px;font-weight:700;color:#182238">
       <span style="display:inline-block;width:28px;height:28px;line-height:28px;text-align:center;background:#3b82d6;color:#fff;border-radius:50%;font-size:12px;margin-right:8px">LM</span>LibaMed

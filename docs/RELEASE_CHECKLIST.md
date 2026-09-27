@@ -28,6 +28,25 @@ Work through Part 1 first.
 
 ---
 
+## Part 0 — Environment variables (check this before anything else)
+
+These are set in **Vercel → Settings → Environment Variables**, not in the repo.
+Every one of them fails quietly when it is wrong, which is why they are listed
+first: the app keeps working and simply stops telling anyone.
+
+| Variable | Must be | What goes wrong if it isn't |
+|---|---|---|
+| `CONTACT_INBOX` | `admin@libamed.com` | Unset, staff notifications fall back to the address inside `EMAIL_FROM`. On a default install that is `onboarding@resend.dev` — Resend's own address. Resend **accepts** the send, so nothing errors and nothing is logged, and every patient enquiry and contact message is announced to nobody. The enquiry is still stored; it just never gets read. `staffInbox()` now refuses that fallback and logs instead, so check the Vercel function logs for a `[email] CONTACT_INBOX is not set` warning. |
+| `NEXT_PUBLIC_SITE_URL` | `https://www.libamed.com` | Every link inside an outgoing email points at `http://localhost:3000`. This is inlined **at build time**, so changing it needs a redeploy, not just a restart. |
+| `EMAIL_FROM` | an address on a verified domain | While it stays `LibaMed <onboarding@resend.dev>`, Resend delivers **only** to `admin@libamed.com` and rejects every other recipient with a 403. Clinician-facing mail — approvals, co-sign requests, password resets — silently does not arrive. Verify `libamed.com` at resend.com/domains first, then move this onto it. |
+| `RESEND_API_KEY` | a restricted send-only key | Without it the whole email module no-ops and logs `[email] skipped`. |
+| `SUPABASE_SECRET_KEY` | the service key | Server-side reads are default-deny without it; pages render empty rather than erroring. |
+
+After changing any of these, redeploy and send one real enquiry through
+`/en/for-patients` to confirm the notification arrives.
+
+---
+
 ## Part 1 — Do these first (about 10 minutes)
 
 ### 1.1 Confirm the deploy landed
