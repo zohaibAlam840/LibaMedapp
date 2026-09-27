@@ -9,7 +9,7 @@ import {
   type ContactStatus,
 } from "@/lib/db/contact";
 import { appendAdminAudit } from "@/lib/db/write";
-import { sendEmail } from "@/lib/email";
+import { sendEmail, staffInbox } from "@/lib/email";
 
 // Public contact form + the admin inbox that reads it.
 //
@@ -18,11 +18,6 @@ import { sendEmail } from "@/lib/email";
 // table, stores no files, and its fields are length-capped below.
 
 export type ContactState = { ok?: boolean; error?: string };
-
-/** Where enquiries are sent. Falls back to the from-address, which is always set. */
-function inbox(): string {
-  return process.env.CONTACT_INBOX || process.env.EMAIL_FROM?.match(/<(.+)>/)?.[1] || "";
-}
 
 const LIMITS = { name: 120, email: 200, organisation: 160, subject: 120, body: 5000 };
 
@@ -66,7 +61,7 @@ export async function sendContactMessageAction(
     return { error: "Something went wrong sending that. Please try again." };
   }
 
-  const to = inbox();
+  const to = staffInbox();
   if (to) {
     await sendEmail({
       to,

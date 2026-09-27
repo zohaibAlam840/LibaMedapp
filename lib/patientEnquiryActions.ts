@@ -2,7 +2,7 @@
 
 import { insertInterest, isMissingTable } from "@/lib/db/patientInterest";
 import { validOption } from "@/lib/patientInterest";
-import { sendEmail, siteUrl } from "@/lib/email";
+import { sendEmail, siteUrl, staffInbox } from "@/lib/email";
 
 // The public patient enquiry form.
 //
@@ -26,11 +26,6 @@ const LIMITS = {
   campaignId: 120,
   leadSource: 120,
 };
-
-/** Where new enquiries are announced. */
-function inbox(): string {
-  return process.env.CONTACT_INBOX || process.env.EMAIL_FROM?.match(/<(.+)>/)?.[1] || "";
-}
 
 // Deliberately permissive: it catches typos without rejecting a valid postcode
 // the pattern's author never thought of. The admin reads it either way.
@@ -99,7 +94,7 @@ export async function submitPatientEnquiryAction(
   // Stored first, announced second: a mail outage costs a notification, never
   // the enquiry. The email carries NO health detail — just that one arrived and
   // where to read it. Whoever runs the inbox is not necessarily clinical.
-  const to = inbox();
+  const to = staffInbox();
   if (to) {
     await sendEmail({
       to,

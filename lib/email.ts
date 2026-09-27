@@ -93,3 +93,35 @@ export async function sendEmail(args: SendArgs): Promise<boolean> {
     return false;
   }
 }
+
+/**
+ * Where staff notifications go: "a patient enquiry arrived", "a contact message
+ * arrived". NOT the same thing as EMAIL_FROM, which is who mail is sent AS.
+ *
+ * Both call sites used to fall back to the address inside EMAIL_FROM. On a
+ * default install that is `onboarding@resend.dev` — Resend's shared test
+ * sender, which is an address Resend owns and nobody at LibaMed can read. The
+ * send then SUCCEEDED, so `sendEmail` logged nothing, and every patient enquiry
+ * and contact message was announced into a void with no error anywhere. The
+ * enquiry itself was always stored, so nothing was lost; it simply reached
+ * nobody until someone opened the admin screen on the off chance.
+ *
+ * So the fallback is refused rather than trusted. An unset CONTACT_INBOX is a
+ * configuration gap, and a loud log is the only way it gets noticed — silently
+ * "succeeding" is what hid it.
+ */
+export function staffInbox(): string {
+  const explicit = process.env.CONTACT_INBOX?.trim();
+  if (explicit) return explicit;
+
+  const fromAddress = FROM.match(/<(.+)>/)?.[1] ?? FROM;
+  if (/(^|@|\.)resend\.dev$/i.test(fromAddress)) {
+    console.warn(
+      "[email] CONTACT_INBOX is not set and EMAIL_FROM is still the Resend test " +
+        `sender (${fromAddress}). Staff notifications are NOT being delivered to ` +
+        "anyone. Enquiries are still stored — read them in /admin/patient-enquiries.",
+    );
+    return "";
+  }
+  return fromAddress;
+}
