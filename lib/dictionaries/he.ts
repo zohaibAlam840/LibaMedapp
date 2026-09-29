@@ -4,6 +4,7 @@ export const he: Dictionary = {
   nav: {
     forClinicians: "לרופאים",
     forPatients: "למטופלים",
+    secondOpinion: "Second opinions",
     pledge: "ההתחייבות",
     hospitals: "בתי חולים",
     corridors: "מסדרונות",

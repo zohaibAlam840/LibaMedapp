@@ -64,6 +64,17 @@ export default function InterestRow({ locale, interest }: { locale: string; inte
         <div className="border-t border-line px-3.5 py-3">
           <dl className="grid gap-x-6 gap-y-2 text-[13px] sm:grid-cols-2">
             <Row label="Email" value={interest.email} />
+            {/* "Not asked" rather than blank or an assumed "Me": enquiries
+                captured before 30 Sep 2026 predate the question, and showing
+                them as self-enquiries would invent a consent nobody gave. */}
+            <Row
+              label="For"
+              value={
+                interest.enquiryFor
+                  ? optionLabel("enquiryFor", interest.enquiryFor)
+                  : "Not asked (before 30 Sep 2026)"
+              }
+            />
             <Row label="Phone" value={interest.phone || ""} />
             <Row label="Age range" value={interest.ageRange || ""} />
             <Row label="Funding" value={interest.fundingType ? optionLabel("fundingType", interest.fundingType) : ""} />

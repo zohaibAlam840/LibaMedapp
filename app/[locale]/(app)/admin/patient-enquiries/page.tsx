@@ -11,7 +11,12 @@ import {
   getInterests,
   interestReady,
 } from "@/lib/db/patientInterest";
-import { INTEREST_STATUSES, STATUS_LABEL, type InterestStatus } from "@/lib/patientInterest";
+import {
+  ENQUIRY_FOR,
+  INTEREST_STATUSES,
+  STATUS_LABEL,
+  type InterestStatus,
+} from "@/lib/patientInterest";
 import { cn } from "@/lib/cn";
 
 export const metadata = { title: "Patient enquiries · LibaMed" };
@@ -27,10 +32,10 @@ export default async function Page({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ status?: string; campaign?: string }>;
+  searchParams: Promise<{ status?: string; campaign?: string; for?: string }>;
 }) {
   const { locale } = await params;
-  const { status, campaign } = await searchParams;
+  const { status, campaign, for: forWhom } = await searchParams;
   await requireOversight(locale);
   const ready = await interestReady();
 
@@ -38,21 +43,28 @@ export default async function Page({
     ? (status as InterestStatus)
     : "all";
 
+  // Only the two values the question offers are honoured, so ?for=anything
+  // cannot quietly filter the list down to nothing and look like no enquiries.
+  const activeFor = ENQUIRY_FOR.some((o) => o.value === forWhom) ? forWhom : undefined;
+
   const [interests, counts, campaigns]: [Awaited<ReturnType<typeof getInterests>>, Record<string, number>, string[]] = ready
     ? await Promise.all([
-        getInterests({ status: active, campaign }),
+        getInterests({ status: active, campaign, enquiryFor: activeFor }),
         getInterestCounts(),
         getCampaigns(),
       ])
     : [[], {}, []];
 
   const total = Object.values(counts).reduce((n, c) => n + c, 0);
-  const href = (patch: { status?: string; campaign?: string }) => {
+
+  const href = (patch: { status?: string; campaign?: string; for?: string }) => {
     const q = new URLSearchParams();
     const s = patch.status ?? (active === "all" ? "" : active);
     const c = patch.campaign ?? campaign ?? "";
+    const w = patch.for ?? activeFor ?? "";
     if (s) q.set("status", s);
     if (c) q.set("campaign", c);
+    if (w) q.set("for", w);
     const qs = q.toString();
     return `/${locale}/admin/patient-enquiries${qs ? `?${qs}` : ""}`;
   };
@@ -87,6 +99,17 @@ export default async function Page({
                 {counts[s] ? ` · ${counts[s]}` : ""}
               </FilterLink>
             ))}
+            <span className="flex flex-wrap items-center gap-2">
+              <span className="text-[13px] text-ink-secondary">For</span>
+              <FilterLink href={href({ for: "" })} active={!activeFor}>
+                Anyone
+              </FilterLink>
+              {ENQUIRY_FOR.map((o) => (
+                <FilterLink key={o.value} href={href({ for: o.value })} active={activeFor === o.value}>
+                  {o.label}
+                </FilterLink>
+              ))}
+            </span>
             {campaigns.length > 0 && (
               <span className="ms-auto flex flex-wrap items-center gap-2">
                 <span className="text-[13px] text-ink-secondary">Campaign</span>

@@ -4,6 +4,7 @@ export const en: Dictionary = {
   nav: {
     forClinicians: "For clinicians",
     forPatients: "For patients",
+    secondOpinion: "Second opinions",
     pledge: "The Pledge",
     hospitals: "Hospitals",
     corridors: "Corridors",

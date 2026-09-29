@@ -23,6 +23,7 @@ export interface Dictionary {
   nav: {
     forClinicians: string;
     forPatients: string;
+    secondOpinion: string;
     pledge: string;
     hospitals: string;
     corridors: string;

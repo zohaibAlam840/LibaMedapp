@@ -29,6 +29,7 @@ export default async function PublicFooter({ locale }: { locale: string }) {
     ],
     [
       { href: "/for-patients", label: t.nav.forPatients },
+      { href: "/second-opinion", label: t.nav.secondOpinion },
       { href: "/for-clinicians", label: t.nav.forClinicians },
       { href: "/contact", label: t.footer.contact },
       { href: "/faq", label: t.footer.faq },

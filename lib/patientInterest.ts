@@ -21,15 +21,51 @@ export const SPECIALTY_AREAS = [
   "Cardiology",
   "Neurology/neurosurgery",
   "Fertility",
+  // Added 2026-09-30 (change scope item B2) as a SEVENTH option — the six
+  // above are unchanged, because campaign reporting is built on them and
+  // rewording one would split its history across two labels.
+  "Second opinion — digestive or liver cancer",
   "Other specialist care",
 ] as const;
 
-export const DESTINATIONS = [
-  { value: "none", label: "No preference" },
-  { value: "switzerland", label: "Switzerland" },
-  { value: "turkiye", label: "Türkiye" },
-  { value: "other", label: "Somewhere else" },
+/**
+ * The area the /en/second-opinion page preselects on the form.
+ *
+ * Named here rather than written out at the call site so the page and the
+ * option cannot drift apart — if this string is edited, the preset follows it.
+ */
+export const SECOND_OPINION_AREA = "Second opinion — digestive or liver cancer";
+
+/** Who the enquiry is about. Constrained in the database — see migration 009. */
+export const ENQUIRY_FOR = [
+  { value: "self", label: "Me" },
+  { value: "other", label: "Someone else" },
 ] as const;
+
+export type EnquiryFor = (typeof ENQUIRY_FOR)[number]["value"];
+
+export interface DestinationOption {
+  value: string;
+  label: string;
+}
+
+/**
+ * The two destination answers that are NOT a corridor, and so are always
+ * offered whatever is published.
+ *
+ * The countries in between are no longer listed here. A hardcoded list put
+ * Türkiye on the public form for anyone to see, while the corridor and the
+ * hospital pages were correctly hidden — the corridor was unpublished
+ * precisely because its commercial terms were still open, and the form
+ * advertised it anyway. A second list of the same thing will always drift away
+ * from the first, so there is only one now: `getDestinationOptions()` in
+ * lib/db/destinations.ts builds the middle of this list from the corridors
+ * that are actually published.
+ */
+export const FIXED_DESTINATIONS: DestinationOption[] = [
+  { value: "none", label: "No preference" },
+  { value: "other", label: "Somewhere else" },
+];
 
 export const FUNDING_TYPES = [
   { value: "self-pay", label: "Paying myself" },
@@ -71,11 +107,30 @@ const PLAIN: Record<string, readonly string[]> = {
   timeframe: TIMEFRAMES,
 };
 
-/** Lists that are value/label pairs. */
+/**
+ * Lists that are value/label pairs.
+ *
+ * `destinationPreference` is deliberately absent: what counts as a valid
+ * destination depends on what is published right now, which this module cannot
+ * know without a database. It is validated in the server action against the
+ * same list the form was rendered from — see validDestination().
+ */
 const CODED: Record<string, readonly { value: string; label: string }[]> = {
-  destinationPreference: DESTINATIONS,
   fundingType: FUNDING_TYPES,
+  enquiryFor: ENQUIRY_FOR,
 };
+
+/**
+ * Check a submitted destination against the options actually offered.
+ *
+ * Takes the list rather than reading it, so the caller passes the same one the
+ * form was built from and there is no second source to drift.
+ */
+export function validDestination(raw: string, offered: DestinationOption[]): string | null {
+  const value = raw.trim();
+  if (!value) return null;
+  return offered.some((o) => o.value === value) ? value : null;
+}
 
 /**
  * Accept a submitted value only if it is one we offered.

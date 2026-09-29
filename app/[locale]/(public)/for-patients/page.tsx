@@ -2,6 +2,7 @@ import Link from "next/link";
 import { HeartHandshake, ShieldCheck, Stethoscope, UserRoundCheck } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import PatientEnquiryForm from "@/components/marketing/PatientEnquiryForm";
+import { getDestinationOptions } from "@/lib/db/destinations";
 
 export const metadata = {
   title: "For patients",
@@ -18,8 +19,19 @@ export const metadata = {
 //
 // It also does not promise a referral. Everything here leads to one enquiry
 // form, and the pathway section says in plain words that a clinician decides.
-export default async function Page({ params }: { params: Promise<{ locale: string }> }) {
+export default async function Page({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<{ area?: string }>;
+}) {
   const { locale } = await params;
+  // ?area= is how /en/second-opinion sends someone here with the right area of
+  // care already chosen. It is validated against the offered list in the
+  // action either way, so a hand-edited value cannot store anything odd.
+  const { area } = await searchParams;
+  const destinations = await getDestinationOptions();
 
   const steps = [
     {
@@ -73,6 +85,26 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
         ))}
       </div>
 
+      {/* Signposted before the form: someone whose question is specifically a
+          cancer second opinion is better served by that page's detail than by
+          a general enquiry, and sending them there first saves a round trip. */}
+      <div className="mt-8 flex flex-col items-start gap-2 rounded-panel border border-line bg-card px-5 py-4">
+        <h2 className="text-[15px] font-semibold text-ink">
+          Looking for a cancer second opinion?
+        </h2>
+        <p className="max-w-[62ch] text-[14px] leading-relaxed text-ink-secondary">
+          We arrange review of digestive, liver, pancreatic and bile-duct cancer cases by
+          a multidisciplinary tumour board in Z&uuml;rich, with a written opinion sent
+          back to your own doctor. You don&rsquo;t travel.
+        </p>
+        <Link
+          href={`/${locale}/second-opinion`}
+          className="text-[14px] font-medium text-accent hover:underline"
+        >
+          How second opinions work
+        </Link>
+      </div>
+
       {/* Said before the form rather than after it, because someone who should
           be going to their GP instead should find that out before typing. */}
       <div className="mt-8 rounded-panel border border-line bg-subtle px-5 py-4">
@@ -100,7 +132,7 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
           won&rsquo;t contact your doctor without asking you first.
         </p>
         <div className="mt-6">
-          <PatientEnquiryForm />
+          <PatientEnquiryForm destinations={destinations} presetArea={area} />
         </div>
       </div>
 

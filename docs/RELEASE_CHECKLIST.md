@@ -13,6 +13,16 @@ Deployed to libamed.com from `main`.
 > than discarding what someone typed about a patient. Without 007, Attention
 > falls back to flagging the same regulatory duty on every load, exactly as it
 > did before.
+>
+> **Then 008 and 009**, for the patient enquiry work:
+> `supabase/migrations/008_patient_interest.sql` creates the enquiry table —
+> without it the form refuses enquiries and says why rather than losing them.
+> `supabase/migrations/009_enquiry_for_whom.sql` adds the "Who is this enquiry
+> for?" answer. Without 009 the form still works and the enquiry is still
+> stored: the answer alone is dropped, and the admin row shows "Not asked",
+> which is then indistinguishable from an enquiry captured before the question
+> existed. That is the one thing 009 being late actually costs, and it is worth
+> running promptly because the consent wording now depends on that answer.
 
 The August release removed invented data from the admin area and closed several
 access-control holes. **This September release wires the screens that looked
@@ -44,6 +54,31 @@ first: the app keeps working and simply stops telling anyone.
 
 After changing any of these, redeploy and send one real enquiry through
 `/en/for-patients` to confirm the notification arrives.
+
+### Where the FAQ and help content actually come from
+
+The FAQ, the glossary and the editable help text are served from the
+**database** (`faq_items`, `glossary_terms`), not from `lib/marketing.ts`. The
+lists in that file are only the seed, used when the tables are missing.
+
+Two consequences worth knowing before you go looking in the wrong place:
+
+- Editing the copy in code changes nothing on a database that has already been
+  seeded. Edit it in **Admin → Help content**, which writes the row and calls
+  `revalidatePath` so the page updates.
+- Writing to those tables directly (psql, the Supabase table editor, a script)
+  skips that revalidation, and `/en/faq` is prerendered — so the old answer
+  keeps being served until the next deploy rebuilds it. If a content change is
+  not showing, this is almost always why.
+
+And one that costs an hour if you don't know it: **a rebuild is not enough on
+its own.** supabase-js makes its calls through `fetch`, which Next caches, and
+that cache lives in `.next/cache` and survives `npm run build`. A build after a
+direct database edit can therefore replay the OLD row and prerender the stale
+answer, with no error and nothing in the logs — the database, the code and the
+page all disagree and only the page is wrong. `rm -rf .next` before the build
+settles it. This does not affect normal operation, because an admin edit goes
+through `revalidatePath` rather than a rebuild.
 
 ---
 

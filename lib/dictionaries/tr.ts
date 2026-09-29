@@ -4,6 +4,7 @@ export const tr: Dictionary = {
   nav: {
     forClinicians: "Klinisyenler için",
     forPatients: "Hastalar için",
+    secondOpinion: "Second opinions",
     pledge: "Taahhüt",
     hospitals: "Hastaneler",
     corridors: "Koridorlar",

@@ -29,6 +29,8 @@ export function isMissingTable(e: unknown): boolean {
 export interface NewInterest {
   name: string;
   email: string;
+  /** Who the enquiry is about -- see migration 009. Null on rows captured before the question existed. */
+  enquiryFor?: string | null;
   phone?: string | null;
   ageRange?: string | null;
   postcode?: string | null;
@@ -57,6 +59,7 @@ interface Row {
   id: string;
   name: string;
   email: string;
+  enquiry_for: string | null;
   phone: string | null;
   age_range: string | null;
   postcode: string | null;
@@ -76,7 +79,7 @@ interface Row {
 }
 
 const COLS =
-  "id, name, email, phone, age_range, postcode, specialty_area, description, " +
+  "id, name, email, enquiry_for, phone, age_range, postcode, specialty_area, description, " +
   "destination_preference, funding_type, budget_band, timeframe, consent_to_contact, " +
   "campaign_id, lead_source, status, note, created_at, handler:handled_by(name)";
 
@@ -85,6 +88,7 @@ function map(r: Row): Interest {
     id: r.id,
     name: r.name,
     email: r.email,
+    enquiryFor: r.enquiry_for ?? "",
     phone: r.phone ?? "",
     ageRange: r.age_range ?? "",
     postcode: r.postcode ?? "",
@@ -105,11 +109,39 @@ function map(r: Row): Interest {
   };
 }
 
+/** True when migration 009 hasn't been applied yet — the `enquiry_for` column is absent. */
+function isMissingColumn(e: unknown): boolean {
+  const err = e as { code?: string; message?: string };
+  return (
+    err?.code === "42703" ||
+    err?.code === "PGRST204" ||
+    /column .*enquiry_for.* does not exist|could not find the '?enquiry_for/i.test(err?.message ?? "")
+  );
+}
+
 /** Store an enquiry. Throws so the action can tell the sender it failed. */
 export async function insertInterest(i: NewInterest): Promise<boolean> {
+  try {
+    return await write(i, true);
+  } catch (e) {
+    // Migration 009 not applied yet. Storing the enquiry WITHOUT the new field
+    // beats refusing it: this code ships before the migration is run by hand,
+    // and in that window a real patient pressing send must not be turned away
+    // because of a column that is missing on our side. The answer they gave is
+    // lost, not the enquiry, and the admin row shows "Not asked" — which is
+    // then indistinguishable from a genuinely older enquiry. That is the
+    // trade, and it lasts only until 009 runs.
+    if (!isMissingColumn(e)) throw e;
+    console.warn("[db] patient_interest.enquiry_for missing — apply migration 009. Storing without it.");
+    return await write(i, false);
+  }
+}
+
+async function write(i: NewInterest, withEnquiryFor: boolean): Promise<boolean> {
   const { error } = await supabaseAdmin().from("patient_interest").insert({
     name: i.name,
     email: i.email,
+    ...(withEnquiryFor ? { enquiry_for: i.enquiryFor || null } : {}),
     phone: i.phone || null,
     age_range: i.ageRange || null,
     // Normalised so "sw1a 1aa" and "SW1A 1AA" are one postcode when filtering.
@@ -132,21 +164,45 @@ export async function insertInterest(i: NewInterest): Promise<boolean> {
 export interface InterestFilters {
   status?: InterestStatus | "all";
   campaign?: string;
+  /** "self" | "other"; rows predating the question are excluded by either. */
+  enquiryFor?: string;
 }
 
 export async function getInterests(filters: InterestFilters = {}): Promise<Interest[]> {
   if (!configured()) return [];
   try {
-    let q = supabaseAdmin().from("patient_interest").select(COLS);
-    if (filters.status && filters.status !== "all") q = q.eq("status", filters.status);
-    if (filters.campaign) q = q.eq("campaign_id", filters.campaign);
-    const { data, error } = await q.order("created_at", { ascending: false });
-    if (error) throw error;
-    return ((data as unknown as Row[]) ?? []).map(map);
+    return await read(filters, true);
   } catch (e) {
-    if (!isMissingTable(e)) console.warn("[db] getInterests failed:", (e as Error)?.message);
+    if (isMissingTable(e)) return [];
+    // Migration 009 not applied: COLS names enquiry_for, so the whole SELECT
+    // fails and the screen would show "no enquiries" while enquiries exist.
+    // Silently empty is the worst possible answer for a triage list, so it
+    // reads again without that one column.
+    if (isMissingColumn(e)) {
+      console.warn("[db] patient_interest.enquiry_for missing — apply migration 009.");
+      try {
+        return await read(filters, false);
+      } catch (e2) {
+        console.warn("[db] getInterests failed:", (e2 as Error)?.message);
+        return [];
+      }
+    }
+    console.warn("[db] getInterests failed:", (e as Error)?.message);
     return [];
   }
+}
+
+async function read(filters: InterestFilters, withEnquiryFor: boolean): Promise<Interest[]> {
+  const cols = withEnquiryFor ? COLS : COLS.replace("enquiry_for, ", "");
+  let q = supabaseAdmin().from("patient_interest").select(cols);
+  if (filters.status && filters.status !== "all") q = q.eq("status", filters.status);
+  if (filters.campaign) q = q.eq("campaign_id", filters.campaign);
+  // Skipped entirely without the column — filtering on it would fail, and
+  // returning everything unfiltered would quietly lie about what is shown.
+  if (filters.enquiryFor && withEnquiryFor) q = q.eq("enquiry_for", filters.enquiryFor);
+  const { data, error } = await q.order("created_at", { ascending: false });
+  if (error) throw error;
+  return ((data as unknown as Row[]) ?? []).map(map);
 }
 
 /** True when the table exists, so the admin screen can explain an empty list. */

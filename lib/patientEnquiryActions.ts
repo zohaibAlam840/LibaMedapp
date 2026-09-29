@@ -1,7 +1,8 @@
 "use server";
 
 import { insertInterest, isMissingTable } from "@/lib/db/patientInterest";
-import { validOption } from "@/lib/patientInterest";
+import { validDestination, validOption } from "@/lib/patientInterest";
+import { getDestinationOptions } from "@/lib/db/destinations";
 import { sendEmail, siteUrl, staffInbox } from "@/lib/email";
 
 // The public patient enquiry form.
@@ -54,6 +55,22 @@ export async function submitPatientEnquiryAction(
   if (postcode && !UK_POSTCODE.test(postcode)) {
     return { error: "That postcode doesn't look like a UK one." };
   }
+  // Who the enquiry is for. Checked here and not only in the browser, because
+  // the consent below means something different depending on the answer.
+  const enquiryFor = validOption("enquiryFor", String(formData.get("enquiryFor") || ""));
+  if (!enquiryFor) {
+    return { error: "Please tell us whether this enquiry is for you or someone else." };
+  }
+  // Area of care and budget are required as of the 29 Sep change scope. Both
+  // are enforced here as well as with `required` on the select: the form posts
+  // to a public endpoint, so a browser attribute is a convenience, never the
+  // rule. Each list contains a catch-all ("Other specialist care", "Prefer not
+  // to say / insurance-funded"), so nobody is forced to state something they
+  // do not want to.
+  const specialtyArea = validOption("specialtyArea", String(formData.get("specialtyArea") || ""));
+  if (!specialtyArea) return { error: "Please choose an area of care." };
+  const budgetBand = validOption("budgetBand", String(formData.get("budgetBand") || ""));
+  if (!budgetBand) return { error: "Please choose a rough budget." };
   // Consent is the lawful basis for contacting them at all, so it is a hard
   // requirement rather than a preference stored alongside the enquiry.
   if (formData.get("consentToContact") !== "on") {
@@ -67,14 +84,18 @@ export async function submitPatientEnquiryAction(
       phone: read("phone"),
       postcode,
       description,
+      enquiryFor,
       ageRange: validOption("ageRange", String(formData.get("ageRange") || "")),
-      specialtyArea: validOption("specialtyArea", String(formData.get("specialtyArea") || "")),
-      destinationPreference: validOption(
-        "destinationPreference",
+      specialtyArea,
+      // Checked against what is published right now, not a static list — the
+      // same list the form was rendered from. A destination that has since
+      // been unpublished is dropped rather than stored.
+      destinationPreference: validDestination(
         String(formData.get("destinationPreference") || ""),
+        await getDestinationOptions(),
       ),
       fundingType: validOption("fundingType", String(formData.get("fundingType") || "")),
-      budgetBand: validOption("budgetBand", String(formData.get("budgetBand") || "")),
+      budgetBand,
       timeframe: validOption("timeframe", String(formData.get("timeframe") || "")),
       consentToContact: true,
       campaignId: read("campaignId"),

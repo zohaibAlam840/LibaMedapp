@@ -105,6 +105,18 @@ export default async function Page({
                 or legal claim must be kept for longer. Audit records are
                 retained as required for regulatory accountability.
               </p>
+              {/* Stated separately from clinical records, and immediately after
+                  them, because the two are governed differently and the
+                  contrast is the point: an enquiry is not a medical record, is
+                  not kept like one, and IS deleted automatically — the opposite
+                  of the paragraph above. */}
+              <p>
+                <strong>Patient enquiries are kept for 24 months and then deleted
+                automatically.</strong>{" "}
+                An enquiry sent through the patient page is not a medical record
+                and is not retained as one. If no referral follows, nothing about
+                it is kept beyond that period.
+              </p>
             </>
           ),
         },

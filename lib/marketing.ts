@@ -45,8 +45,16 @@ export const PLEDGE_COMMITMENTS = [
     proof: { label: "Read the security overview", href: "/security" },
   },
   {
-    title: "Transparent about cost, always",
-    body: "An itemised estimate before treatment. No hidden platform fees on the clinical estimate — ever.",
+    // Client's wording, change scope 2026-09-29 Appendix C. Split in two
+    // because the platform now has two payment shapes and a single sentence
+    // could only describe one of them honestly: treatment referrals, where the
+    // hospital pays us and the patient never does, and second opinions, where
+    // the patient pays a stated fixed fee. The old wording predated the second
+    // and would have read as a promise the new service breaks.
+    title: "No platform fee on treatment referrals",
+    body:
+      "When a patient is referred for treatment, LibaMed is paid by the receiving hospital, never by the patient or the referring clinician. We tell the patient what that fee is before they decide. Second opinions are a separate, fixed-price service: the patient pays a £300 coordination fee to LibaMed, stated in writing before anything is booked, and the review itself is paid directly to the reviewing board. LibaMed never holds patient money.",
+    proof: { label: "How second opinions work", href: "/second-opinion" },
   },
   {
     title: "A seamless handback to UK care",
@@ -89,7 +97,11 @@ export const FAQS: Faq[] = [
   { category: "Data & privacy", q: "Can I get a full audit trail?", a: "Yes. Every consent event, document access, and status change is recorded append-only and can be exported for independent review." },
   { category: "Hospitals", q: "How are partner hospitals chosen?", a: "Four-stage accreditation: international certification (JCI/ISO/national), outcome-data transparency, a UK-standard complaints process, and clinical quality audit — before any referral routes." },
   { category: "Hospitals", q: "Which specialties are covered?", a: "Oncology, orthopedics, fertility, cardiology, neurosurgery, transplantation, and reconstructive surgery, with sub-specialty routing per hospital." },
-  { category: "Costs", q: "What does the platform cost the patient?", a: "The clinical estimate comes itemised from the hospital, with no hidden platform fees added. Cost transparency before treatment is a Pledge commitment." },
+  // Amended alongside the Pledge (Appendix C). The previous answer said the
+  // platform costs the patient nothing, which stopped being true the moment
+  // second opinions became a £300 patient-paid service. The change scope asks
+  // that no page still says patients never pay; this is the other page.
+  { category: "Costs", q: "What does the platform cost the patient?", a: "For a treatment referral, nothing: the clinical estimate comes itemised from the hospital with no platform fees added, and LibaMed is paid by the receiving hospital. A remote second opinion is different — it is a fixed-price service with a £300 coordination fee paid to LibaMed, stated in writing before anything is booked." },
   { category: "Costs", q: "Who pays for treatment?", a: "Treatment is contracted between the patient and the receiving hospital. LibaMed carries the referral, records, and communication — not the payment." },
   { category: "Access", q: "Who can register?", a: "UK-registered doctors (GMC-verified at sign-up) and, at launch partners, US-licensed physicians. Receiving clinicians are onboarded through their hospitals." },
   { category: "Access", q: "Why do you verify my GMC number?", a: "Every referral must be clinician-led. Verification against the public GMC register before your first case is how we keep that promise." },

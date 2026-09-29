@@ -9,10 +9,11 @@ import { submitPatientEnquiryAction, type EnquiryState } from "@/lib/patientEnqu
 import {
   AGE_RANGES,
   BUDGET_BANDS,
-  DESTINATIONS,
+  ENQUIRY_FOR,
   FUNDING_TYPES,
   SPECIALTY_AREAS,
   TIMEFRAMES,
+  type DestinationOption,
 } from "@/lib/patientInterest";
 
 /**
@@ -26,7 +27,22 @@ import {
  * There is no file input, deliberately — someone who can attach a document will
  * attach their whole medical record to a marketing form.
  */
-export default function PatientEnquiryForm() {
+export default function PatientEnquiryForm({
+  destinations,
+  presetArea,
+}: {
+  /**
+   * Passed in rather than imported: the list is whatever is published right
+   * now, which only the server knows. See lib/db/destinations.ts.
+   */
+  destinations: DestinationOption[];
+  /**
+   * Preselects "Area of care" — how the second-opinion page's call to action
+   * arrives here. Still a normal select the person can change: arriving from a
+   * page about liver cancer is a strong hint, not an answer they gave.
+   */
+  presetArea?: string;
+}) {
   const [state, action] = useActionState<EnquiryState, FormData>(submitPatientEnquiryAction, {});
 
   /**
@@ -85,6 +101,31 @@ export default function PatientEnquiryForm() {
         </span>
       </p>
 
+      {/* Asked first, and on its own, because the answer changes what the
+          consent at the bottom of the form actually means. */}
+      <fieldset className="flex flex-col gap-2">
+        <legend className="mb-1 text-[13px] font-medium uppercase tracking-wide text-ink-muted">
+          Who is this enquiry for?
+        </legend>
+        <div className="flex flex-wrap gap-2">
+          {ENQUIRY_FOR.map((o) => (
+            <label
+              key={o.value}
+              className="flex cursor-pointer items-center gap-2 rounded-inner border border-line px-3.5 py-2.5 text-[15px] text-ink has-[:checked]:border-accent has-[:checked]:bg-accent-soft"
+            >
+              <input
+                type="radio"
+                name="enquiryFor"
+                value={o.value}
+                required
+                className="size-4 accent-[var(--accent)]"
+              />
+              {o.label}
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
       <fieldset className="flex flex-col gap-4">
         <legend className="mb-1 text-[13px] font-medium uppercase tracking-wide text-ink-muted">
           About you
@@ -138,7 +179,12 @@ export default function PatientEnquiryForm() {
         </legend>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Area of care" htmlFor="p-specialty">
-            <Select id="p-specialty" name="specialtyArea" defaultValue="">
+            <Select
+              id="p-specialty"
+              name="specialtyArea"
+              defaultValue={presetArea && SPECIALTY_AREAS.includes(presetArea as never) ? presetArea : ""}
+              required
+            >
               <option value="">Select…</option>
               {SPECIALTY_AREAS.map((s) => (
                 <option key={s} value={s}>
@@ -149,7 +195,7 @@ export default function PatientEnquiryForm() {
           </Field>
           <Field label="Where would you prefer to be treated?" htmlFor="p-dest">
             <Select id="p-dest" name="destinationPreference" defaultValue="none">
-              {DESTINATIONS.map((d) => (
+              {destinations.map((d) => (
                 <option key={d.value} value={d.value}>
                   {d.label}
                 </option>
@@ -185,7 +231,7 @@ export default function PatientEnquiryForm() {
             htmlFor="p-budget"
             hint="A range is fine — it helps us point you sensibly."
           >
-            <Select id="p-budget" name="budgetBand" defaultValue="">
+            <Select id="p-budget" name="budgetBand" defaultValue="" required>
               <option value="">Select…</option>
               {BUDGET_BANDS.map((b) => (
                 <option key={b} value={b}>
@@ -208,10 +254,14 @@ export default function PatientEnquiryForm() {
       </fieldset>
 
       <div className="border-t border-line pt-4">
+        {/* Client's wording, supplied 29 Sep 2026 (change scope, Appendix B),
+            used verbatim: it is the lawful basis for holding health
+            information about someone who did not fill the form in themselves,
+            so it is not ours to paraphrase. */}
         <Checkbox
           name="consentToContact"
           required
-          label="You may contact me about this enquiry"
+          label="I agree that LibaMed may hold what I've written here, including anything about health, and contact me about this enquiry. If I'm writing for someone else, they know and agree, or I'm their parent or legal guardian."
           description="We'll use your details only to reply to you about this. We won't add you to a mailing list or pass them to anyone else."
         />
         <p className="mt-3 text-[12px] leading-relaxed text-ink-muted">
