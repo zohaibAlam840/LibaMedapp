@@ -21,6 +21,22 @@ import { FIXED_DESTINATIONS, type DestinationOption } from "@/lib/patientInteres
  * enquiry. Naming a country we have not contracted is the failure that costs
  * something, and it cannot happen this way round.
  */
+/**
+ * value → label for DISPLAYING a stored destination, e.g. in the admin list.
+ *
+ * Built from EVERY corridor, not only the published ones, which is the
+ * difference between this and getDestinationOptions(). An enquiry captured
+ * while a corridor was public keeps that answer after it is unpublished, and
+ * the person reading it still needs to know what the patient asked for.
+ * Offering a destination and explaining one already given are different jobs.
+ */
+export async function getDestinationLabels(): Promise<Record<string, string>> {
+  const labels: Record<string, string> = {};
+  for (const f of FIXED_DESTINATIONS) labels[f.value] = f.label;
+  for (const c of await getCorridors()) labels[c.id] = c.country;
+  return labels;
+}
+
 export async function getDestinationOptions(): Promise<DestinationOption[]> {
   const corridors = await getCorridors();
   const live = corridors

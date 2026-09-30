@@ -4,6 +4,7 @@ import { Card, CardTitle } from "@/components/ui/Card";
 import EmptyState from "@/components/ui/EmptyState";
 import InterestRow from "@/components/admin/InterestRow";
 import EnquiryFilters from "@/components/admin/EnquiryFilters";
+import { getDestinationLabels } from "@/lib/db/destinations";
 import {
   getCampaigns,
   getInterestCounts,
@@ -44,6 +45,8 @@ export default async function Page({
   // Only the two values the question offers are honoured, so ?for=anything
   // cannot quietly filter the list down to nothing and look like no enquiries.
   const activeFor = ENQUIRY_FOR.some((o) => o.value === forWhom) ? forWhom : undefined;
+
+  const destinationLabels = await getDestinationLabels();
 
   const [interests, counts, campaigns]: [Awaited<ReturnType<typeof getInterests>>, Record<string, number>, string[]] = ready
     ? await Promise.all([
@@ -109,7 +112,12 @@ export default async function Page({
             ) : (
               <div className="flex flex-col gap-2">
                 {interests.map((i) => (
-                  <InterestRow key={i.id} locale={locale} interest={i} />
+                  <InterestRow
+                    key={i.id}
+                    locale={locale}
+                    interest={i}
+                    destinationLabels={destinationLabels}
+                  />
                 ))}
               </div>
             )}

@@ -25,7 +25,16 @@ const STATUS_STYLE: Record<string, string> = {
  * it should not be readable over a shoulder from across a room while someone
  * scrolls a list of leads.
  */
-export default function InterestRow({ locale, interest }: { locale: string; interest: Interest }) {
+export default function InterestRow({
+  locale,
+  interest,
+  destinationLabels,
+}: {
+  locale: string;
+  interest: Interest;
+  /** value → label, covering unpublished corridors too — see getDestinationLabels. */
+  destinationLabels: Record<string, string>;
+}) {
   const [state, action] = useActionState<InterestState, FormData>(updateInterestAction, {});
   const [open, setOpen] = useState(false);
 
@@ -45,7 +54,13 @@ export default function InterestRow({ locale, interest }: { locale: string; inte
           <span className="block truncate text-[13px] text-ink-secondary">
             {[
               interest.specialtyArea,
-              interest.destinationPreference && optionLabel("destinationPreference", interest.destinationPreference),
+              // Only a real place earns space on the one-line summary. "No
+              // preference" is the default answer and saying so on every row
+              // crowds out what differs between them — it is still shown in
+              // full when the row is opened.
+              interest.destinationPreference &&
+                interest.destinationPreference !== "none" &&
+                destinationLabel(interest.destinationPreference, destinationLabels),
               interest.timeframe,
               interest.campaignId && `via ${interest.campaignId}`,
             ]
@@ -77,6 +92,14 @@ export default function InterestRow({ locale, interest }: { locale: string; inte
             />
             <Row label="Phone" value={interest.phone || ""} />
             <Row label="Age range" value={interest.ageRange || ""} />
+            <Row
+              label="Preferred destination"
+              value={
+                interest.destinationPreference
+                  ? destinationLabel(interest.destinationPreference, destinationLabels)
+                  : ""
+              }
+            />
             <Row label="Funding" value={interest.fundingType ? optionLabel("fundingType", interest.fundingType) : ""} />
             <Row label="Budget" value={interest.budgetBand || ""} />
             <Row label="Timeframe" value={interest.timeframe || ""} />
@@ -138,4 +161,15 @@ function Row({ label, value }: { label: string; value: string }) {
       <dd className="text-ink">{value || <span className="text-ink-muted">Not given</span>}</dd>
     </div>
   );
+}
+
+/**
+ * Label a stored destination.
+ *
+ * Falls back to the raw value only when the corridor behind it has been
+ * deleted outright — an unpublished one still resolves, because the map is
+ * built from every corridor rather than the published ones.
+ */
+function destinationLabel(value: string, labels: Record<string, string>): string {
+  return labels[value] ?? value;
 }
