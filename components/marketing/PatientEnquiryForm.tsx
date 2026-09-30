@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import { CheckCircle2, FileX2, TriangleAlert } from "lucide-react";
 import SubmitButton from "@/components/ui/SubmitButton";
 import Checkbox from "@/components/ui/Checkbox";
@@ -46,6 +46,29 @@ export default function PatientEnquiryForm({
   const [state, action] = useActionState<EnquiryState, FormData>(submitPatientEnquiryAction, {});
 
   /**
+   * Put the person on the field that was rejected.
+   *
+   * The error is rendered above the button, at the bottom of a long form. The
+   * postcode box is near the top, so "that postcode doesn't look like a UK
+   * one" appeared a screen away from the thing it was talking about. Focusing
+   * the field scrolls it into view and tells a screen reader the same thing.
+   *
+   * Keyed on the whole state object, not on `field`: two rejections of the
+   * same field in a row are different events and should both move focus.
+   */
+  useEffect(() => {
+    if (!state.field) return;
+    const el = document.querySelector<HTMLElement>(`[name="${state.field}"]`);
+    el?.focus({ preventScroll: true });
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [state]);
+
+  // What was typed, handed back by the action so a rejection does not empty
+  // the form.
+  const v = state.values ?? {};
+
+
+  /**
    * Campaign attribution, read at SUBMIT time rather than held in state.
    *
    * Reading it in the server render would make the page uncacheable for the
@@ -81,7 +104,7 @@ export default function PatientEnquiryForm({
   }
 
   return (
-    <form action={submit} className="flex flex-col gap-5">
+    <form key={state.attempt ?? 0} action={submit} className="flex flex-col gap-5">
       {/*
         Honeypot — a CHECKBOX, not a text field.
 
@@ -137,6 +160,7 @@ export default function PatientEnquiryForm({
                 name="enquiryFor"
                 value={o.value}
                 required
+                defaultChecked={v.enquiryFor === o.value}
                 className="size-4 accent-[var(--accent)]"
               />
               {o.label}
@@ -151,7 +175,7 @@ export default function PatientEnquiryForm({
         </legend>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Your name" htmlFor="p-name">
-            <Input id="p-name" name="name" autoComplete="name" required maxLength={120} />
+            <Input id="p-name" name="name" autoComplete="name" required maxLength={120} defaultValue={v.name ?? ""} />
           </Field>
           <Field label="Email" htmlFor="p-email">
             <Input
@@ -161,10 +185,11 @@ export default function PatientEnquiryForm({
               autoComplete="email"
               required
               maxLength={200}
+              defaultValue={v.email ?? ""}
             />
           </Field>
           <Field label="Phone" htmlFor="p-phone" hint="Optional.">
-            <Input id="p-phone" name="phone" type="tel" autoComplete="tel" maxLength={40} />
+            <Input id="p-phone" name="phone" type="tel" autoComplete="tel" maxLength={40} defaultValue={v.phone ?? ""} />
           </Field>
           <Field label="Postcode" htmlFor="p-postcode" hint="So we know where you are in the UK.">
             <Input
@@ -173,6 +198,7 @@ export default function PatientEnquiryForm({
               autoComplete="postal-code"
               maxLength={12}
               placeholder="SW1A 1AA"
+              defaultValue={v.postcode ?? ""}
             />
           </Field>
           <Field
@@ -180,7 +206,7 @@ export default function PatientEnquiryForm({
             htmlFor="p-age"
             hint="If you’re asking on behalf of someone else, give their age, not yours."
           >
-            <Select id="p-age" name="ageRange" defaultValue="">
+            <Select id="p-age" name="ageRange" defaultValue={v.ageRange ?? ""}>
               <option value="">Prefer not to say</option>
               {AGE_RANGES.map((a) => (
                 <option key={a} value={a}>
@@ -201,7 +227,10 @@ export default function PatientEnquiryForm({
             <Select
               id="p-specialty"
               name="specialtyArea"
-              defaultValue={presetArea && SPECIALTY_AREAS.includes(presetArea as never) ? presetArea : ""}
+              defaultValue={
+                v.specialtyArea ??
+                (presetArea && SPECIALTY_AREAS.includes(presetArea as never) ? presetArea : "")
+              }
               required
             >
               <option value="">Select…</option>
@@ -213,7 +242,7 @@ export default function PatientEnquiryForm({
             </Select>
           </Field>
           <Field label="Where would you prefer to be treated?" htmlFor="p-dest">
-            <Select id="p-dest" name="destinationPreference" defaultValue="none">
+            <Select id="p-dest" name="destinationPreference" defaultValue={v.destinationPreference || "none"}>
               {destinations.map((d) => (
                 <option key={d.value} value={d.value}>
                   {d.label}
@@ -227,7 +256,7 @@ export default function PatientEnquiryForm({
           htmlFor="p-desc"
           hint="In your own words. No medical records, please — just the outline."
         >
-          <Textarea id="p-desc" name="description" rows={5} maxLength={4000} />
+          <Textarea id="p-desc" name="description" rows={5} maxLength={4000} defaultValue={v.description ?? ""} />
         </Field>
       </fieldset>
 
@@ -237,7 +266,7 @@ export default function PatientEnquiryForm({
         </legend>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="How would it be paid for?" htmlFor="p-funding">
-            <Select id="p-funding" name="fundingType" defaultValue="unknown">
+            <Select id="p-funding" name="fundingType" defaultValue={v.fundingType || "unknown"}>
               {FUNDING_TYPES.map((f) => (
                 <option key={f.value} value={f.value}>
                   {f.label}
@@ -250,7 +279,7 @@ export default function PatientEnquiryForm({
             htmlFor="p-budget"
             hint="A range is fine — it helps us point you sensibly."
           >
-            <Select id="p-budget" name="budgetBand" defaultValue="" required>
+            <Select id="p-budget" name="budgetBand" defaultValue={v.budgetBand ?? ""} required>
               <option value="">Select…</option>
               {BUDGET_BANDS.map((b) => (
                 <option key={b} value={b}>
@@ -260,7 +289,7 @@ export default function PatientEnquiryForm({
             </Select>
           </Field>
           <Field label="When are you hoping to go?" htmlFor="p-time">
-            <Select id="p-time" name="timeframe" defaultValue="">
+            <Select id="p-time" name="timeframe" defaultValue={v.timeframe ?? ""}>
               <option value="">Not sure</option>
               {TIMEFRAMES.map((t) => (
                 <option key={t} value={t}>
@@ -280,6 +309,7 @@ export default function PatientEnquiryForm({
         <Checkbox
           name="consentToContact"
           required
+          defaultChecked={v.consentToContact === "on"}
           label="I agree that LibaMed may hold what I've written here, including anything about health, and contact me about this enquiry. If I'm writing for someone else, they know and agree, or I'm their parent or legal guardian."
           description="We'll use your details only to reply to you about this. We won't add you to a mailing list or pass them to anyone else."
         />

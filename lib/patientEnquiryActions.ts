@@ -16,7 +16,43 @@ import { sendEmail, siteUrl, staffInbox } from "@/lib/email";
 // clinician, and there is no code path from here into `referrals` — a patient
 // cannot originate a clinical referral, and this release does not change that.
 
-export type EnquiryState = { ok?: boolean; error?: string };
+export type EnquiryState = {
+  ok?: boolean;
+  error?: string;
+  /**
+   * Which field the error is about, so the form can point at it.
+   *
+   * The postcode box sits near the top and the error appears at the bottom, so
+   * "That postcode doesn't look like a UK one" was shown a full screen away
+   * from the field it meant — one report was simply "no place to put a
+   * postcode".
+   */
+  field?: string;
+  /**
+   * Everything that was typed, handed back so the form can re-fill itself.
+   *
+   * React resets an uncontrolled form once its action resolves, so a rejected
+   * submission emptied every box and the whole thing had to be typed again.
+   * On a form that asks about somebody's cancer, that is not a small
+   * annoyance — it is the point at which people give up.
+   */
+  values?: Record<string, string>;
+  /**
+   * How many times this form has been submitted, counted on the server.
+   *
+   * The form uses it as a React `key` so a rejection rebuilds the inputs.
+   * That is not cosmetic: React applies a select's `defaultValue` as a DOM
+   * property, so the reset React performs after an action reverts each select
+   * to its options' own `selected` attributes — none of which are set — and
+   * every dropdown silently emptied while the text fields kept their values.
+   * Remounting makes the echoed values the ones the reset lands on.
+   *
+   * Counted here rather than in a ref because a ref cannot be read during
+   * render, and the key has to change in the same render that carries the new
+   * values — any later pass has already lost the race with the reset.
+   */
+  attempt?: number;
+};
 
 const LIMITS = {
   name: 120,
@@ -33,7 +69,7 @@ const LIMITS = {
 const UK_POSTCODE = /^[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}$/i;
 
 export async function submitPatientEnquiryAction(
-  _prev: EnquiryState,
+  prev: EnquiryState,
   formData: FormData,
 ): Promise<EnquiryState> {
   const read = (key: keyof typeof LIMITS) =>
@@ -65,18 +101,42 @@ export async function submitPatientEnquiryAction(
   const postcode = read("postcode");
   const description = read("description");
 
-  if (!name || !email) return { error: "Please give your name and email address." };
+  // Every answer given, echoed back on any rejection so nothing is retyped.
+  // Built once, before the first check, so no branch can forget it.
+  const values: Record<string, string> = {
+    name,
+    email,
+    phone: read("phone"),
+    postcode,
+    description,
+    enquiryFor: String(formData.get("enquiryFor") || ""),
+    ageRange: String(formData.get("ageRange") || ""),
+    specialtyArea: String(formData.get("specialtyArea") || ""),
+    destinationPreference: String(formData.get("destinationPreference") || ""),
+    fundingType: String(formData.get("fundingType") || ""),
+    budgetBand: String(formData.get("budgetBand") || ""),
+    timeframe: String(formData.get("timeframe") || ""),
+    consentToContact: formData.get("consentToContact") === "on" ? "on" : "",
+  };
+  const attempt = (prev?.attempt ?? 0) + 1;
+  const reject = (error: string, field?: string): EnquiryState => ({ error, field, values, attempt });
+
+  if (!name) return reject("Please give your name.", "name");
+  if (!email) return reject("Please give your email address.", "email");
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return { error: "That email address doesn't look right." };
+    return reject("That email address doesn't look right.", "email");
   }
   if (postcode && !UK_POSTCODE.test(postcode)) {
-    return { error: "That postcode doesn't look like a UK one." };
+    return reject(
+      "That postcode doesn't look like a UK one. You can also leave it blank.",
+      "postcode",
+    );
   }
   // Who the enquiry is for. Checked here and not only in the browser, because
   // the consent below means something different depending on the answer.
   const enquiryFor = validOption("enquiryFor", String(formData.get("enquiryFor") || ""));
   if (!enquiryFor) {
-    return { error: "Please tell us whether this enquiry is for you or someone else." };
+    return reject("Please tell us whether this enquiry is for you or someone else.", "enquiryFor");
   }
   // Area of care and budget are required as of the 29 Sep change scope. Both
   // are enforced here as well as with `required` on the select: the form posts
@@ -85,13 +145,13 @@ export async function submitPatientEnquiryAction(
   // to say / insurance-funded"), so nobody is forced to state something they
   // do not want to.
   const specialtyArea = validOption("specialtyArea", String(formData.get("specialtyArea") || ""));
-  if (!specialtyArea) return { error: "Please choose an area of care." };
+  if (!specialtyArea) return reject("Please choose an area of care.", "specialtyArea");
   const budgetBand = validOption("budgetBand", String(formData.get("budgetBand") || ""));
-  if (!budgetBand) return { error: "Please choose a rough budget." };
+  if (!budgetBand) return reject("Please choose a rough budget.", "budgetBand");
   // Consent is the lawful basis for contacting them at all, so it is a hard
   // requirement rather than a preference stored alongside the enquiry.
   if (formData.get("consentToContact") !== "on") {
-    return { error: "Please tick the box to say we may contact you about this." };
+    return reject("Please tick the box to say we may contact you about this.", "consentToContact");
   }
 
   try {
@@ -120,13 +180,12 @@ export async function submitPatientEnquiryAction(
     });
   } catch (e) {
     if (isMissingTable(e)) {
-      return {
-        error:
-          "We can't record enquiries just yet. Please email hello@libamed.com and we'll pick it up from there.",
-      };
+      return reject(
+        "We can't record enquiries just yet. Please email hello@libamed.com and we'll pick it up from there.",
+      );
     }
     console.warn("[action] patient enquiry failed:", (e as Error)?.message);
-    return { error: "Something went wrong saving that. Please try again in a moment." };
+    return reject("Something went wrong saving that. Please try again in a moment.");
   }
 
   // Stored first, announced second: a mail outage costs a notification, never
