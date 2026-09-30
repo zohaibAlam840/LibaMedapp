@@ -34,9 +34,16 @@ export async function sendContactMessageAction(
   const subject = read("subject");
   const body = read("body");
 
-  // A hidden field no person fills in. Bots do, and the response they get is
-  // identical to a success, so nothing is learned from probing it.
-  if (String(formData.get("company_website") || "")) return { ok: true };
+  // A hidden CHECKBOX no person ticks. Bots tick everything, and the response
+  // they get is identical to a success, so nothing is learned from probing it.
+  // It was a text field named "company_website" until Chrome's autofill was
+  // found filling it, which silently discarded messages from real people.
+  // Logged for the same reason as the enquiry form: this branch throws away
+  // what someone wrote, so it must leave a trace somewhere.
+  if (formData.get("acceptUpdates") != null) {
+    console.warn("[action] contact message rejected by honeypot — discarded.");
+    return { ok: true };
+  }
 
   if (!name || !email || !body) {
     return { error: "Please give your name, email, and a message." };

@@ -39,9 +39,26 @@ export async function submitPatientEnquiryAction(
   const read = (key: keyof typeof LIMITS) =>
     String(formData.get(key) || "").trim().slice(0, LIMITS[key]);
 
-  // A hidden field no person fills in. Bots do, and what they get back is
-  // indistinguishable from success, so probing teaches them nothing.
-  if (String(formData.get("company_website") || "")) return { ok: true };
+  // A hidden CHECKBOX no person ticks. Bots tick everything, and what they get
+  // back is indistinguishable from success, so probing teaches them nothing.
+  //
+  // It used to be a hidden text field called "company_website", which Chrome's
+  // autofill recognised and filled — so real people using autofill were
+  // silently classified as bots and their enquiries dropped. Autofill writes
+  // values; it does not tick boxes.
+  //
+  // Logged, because this branch throws away what someone typed. Discarding a
+  // submission with no record anywhere is how the previous version stayed
+  // invisible: if genuine enquiries ever start landing here again, the Vercel
+  // logs will show it instead of the enquiries simply never arriving.
+  if (formData.get("acceptUpdates") != null) {
+    console.warn(
+      "[action] patient enquiry rejected by honeypot — discarded. campaign=%s source=%s",
+      String(formData.get("campaignId") || "-"),
+      String(formData.get("leadSource") || "-"),
+    );
+    return { ok: true };
+  }
 
   const name = read("name");
   const email = read("email");

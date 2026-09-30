@@ -36,16 +36,23 @@ export default function ContactForm() {
 
   return (
     <form action={action} className="flex flex-col gap-4">
-      {/* Honeypot: a field no person sees or fills. Off-screen rather than
-          display:none, which some password managers and bots skip. */}
-      <input
-        type="text"
-        name="company_website"
-        tabIndex={-1}
-        autoComplete="off"
-        aria-hidden
-        className="absolute -left-[9999px] size-0 opacity-0"
-      />
+      {/* Honeypot — a CHECKBOX, for the reason set out in PatientEnquiryForm:
+          the text field this replaced was called "company_website", which
+          Chrome's autofill recognises and fills, so real people using autofill
+          were treated as bots and their messages silently dropped. Autofill
+          writes values; it does not tick boxes. Off-screen rather than
+          display:none, which some bots skip. */}
+      <div className="absolute -left-[9999px] size-0 overflow-hidden" aria-hidden>
+        <label htmlFor="lm-contact-updates">Do not tick this box</label>
+        <input
+          id="lm-contact-updates"
+          type="checkbox"
+          name="acceptUpdates"
+          tabIndex={-1}
+          autoComplete="off"
+          defaultChecked={false}
+        />
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Full name" htmlFor="c-name">

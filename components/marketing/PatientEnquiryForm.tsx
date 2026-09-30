@@ -82,15 +82,34 @@ export default function PatientEnquiryForm({
 
   return (
     <form action={submit} className="flex flex-col gap-5">
-      {/* Honeypot: off-screen rather than display:none, which some bots skip. */}
-      <input
-        type="text"
-        name="company_website"
-        tabIndex={-1}
-        autoComplete="off"
-        aria-hidden
-        className="absolute -left-[9999px] size-0 opacity-0"
-      />
+      {/*
+        Honeypot — a CHECKBOX, not a text field.
+
+        This was a text input named "company_website". Chrome's autofill
+        matches that name against its own organization/website heuristics and
+        fills it, and Chrome has ignored autocomplete="off" on ordinary fields
+        for years. A signed-in Chrome user with autofill on therefore tripped
+        the bot check, got the thank-you panel, and had their enquiry silently
+        discarded — the single worst failure this form can have, because
+        nothing anywhere said it happened.
+
+        Browsers and password managers fill values; they do not TICK things.
+        A checkbox is invisible to autofill while still catching the bots that
+        submit every field, which is what the honeypot is actually for.
+
+        Off-screen rather than display:none, which some bots skip.
+      */}
+      <div className="absolute -left-[9999px] size-0 overflow-hidden" aria-hidden>
+        <label htmlFor="lm-accept-updates">Do not tick this box</label>
+        <input
+          id="lm-accept-updates"
+          type="checkbox"
+          name="acceptUpdates"
+          tabIndex={-1}
+          autoComplete="off"
+          defaultChecked={false}
+        />
+      </div>
 
       <p className="flex items-start gap-2 rounded-inner bg-subtle px-3.5 py-3 text-[13px] leading-relaxed text-ink-secondary">
         <FileX2 aria-hidden className="mt-0.5 size-4 shrink-0" />
