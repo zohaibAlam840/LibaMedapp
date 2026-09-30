@@ -117,7 +117,6 @@ export const GLOSSARY: { term: string; def: string }[] = [
   { term: "IDTA", def: "The UK International Data Transfer Agreement — a lawful mechanism for sending personal data out of the UK." },
   { term: "Itemised consent", def: "Consent captured item by item — who sees the data, where it goes, for what purpose — each with the exact wording and time recorded." },
   { term: "JCI", def: "Joint Commission International — a leading global hospital accreditation. Part of our four-stage partner vetting." },
-  { term: "KVKK", def: "Turkey's data-protection law. UK → Turkey transfers use KVKK-approved contract clauses, notified to the Turkish authority within 5 business days." },
   { term: "MDT", def: "Multi-disciplinary team — the group of specialists who review complex cases together at the receiving hospital." },
   { term: "RTT", def: "Referral to Treatment — the NHS waiting-time standard (18 weeks for non-urgent care) that many patients currently wait beyond." },
   { term: "SCC", def: "Standard Contractual Clauses — pre-approved legal terms that make an international data transfer lawful." },

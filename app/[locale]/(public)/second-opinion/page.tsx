@@ -25,9 +25,39 @@ export const metadata = {
 //
 // Like the enquiry form, this page accepts NO files. Records go from the
 // patient's own doctor to the board directly and never touch the platform.
-export default async function Page({ params }: { params: Promise<{ locale: string }> }) {
+/**
+ * Tracking parameters carried across to the enquiry form.
+ *
+ * The form reads these from the URL at the moment someone presses send, so a
+ * link that drops them loses the attribution entirely — and this page is the
+ * one most likely to be the landing page of a paid campaign. Without this, an
+ * ad click to /en/second-opinion?utm_campaign=X produced an enquiry with no
+ * campaign at all, which is precisely the spend this page exists to report on.
+ *
+ * An allowlist rather than forwarding the whole query string: anything else on
+ * the URL is not ours and has no business being replayed into another page.
+ */
+const TRACKING = ["utm_campaign", "utm_source", "utm_medium", "campaign_id", "lead_source"] as const;
+
+export default async function Page({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const { locale } = await params;
-  const enquire = `/${locale}/for-patients?area=${encodeURIComponent(SECOND_OPINION_AREA)}#enquiry`;
+  const sp = await searchParams;
+
+  const q = new URLSearchParams({ area: SECOND_OPINION_AREA });
+  for (const key of TRACKING) {
+    const raw = sp[key];
+    const value = Array.isArray(raw) ? raw[0] : raw;
+    // Capped at the same length the action stores, so a padded URL cannot be
+    // used to bloat the page's own markup.
+    if (value) q.set(key, value.slice(0, 120));
+  }
+  const enquire = `/${locale}/for-patients?${q.toString()}#enquiry`;
 
   const steps = [
     {

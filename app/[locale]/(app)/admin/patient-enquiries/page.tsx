@@ -1,10 +1,9 @@
 import { requireOversight } from "@/lib/auth";
-import Link from "next/link";
 import { HeartHandshake, TriangleAlert } from "lucide-react";
 import { Card, CardTitle } from "@/components/ui/Card";
-import Chip from "@/components/ui/Chip";
 import EmptyState from "@/components/ui/EmptyState";
 import InterestRow from "@/components/admin/InterestRow";
+import EnquiryFilters from "@/components/admin/EnquiryFilters";
 import {
   getCampaigns,
   getInterestCounts,
@@ -17,7 +16,6 @@ import {
   STATUS_LABEL,
   type InterestStatus,
 } from "@/lib/patientInterest";
-import { cn } from "@/lib/cn";
 
 export const metadata = { title: "Patient enquiries · LibaMed" };
 
@@ -57,18 +55,6 @@ export default async function Page({
 
   const total = Object.values(counts).reduce((n, c) => n + c, 0);
 
-  const href = (patch: { status?: string; campaign?: string; for?: string }) => {
-    const q = new URLSearchParams();
-    const s = patch.status ?? (active === "all" ? "" : active);
-    const c = patch.campaign ?? campaign ?? "";
-    const w = patch.for ?? activeFor ?? "";
-    if (s) q.set("status", s);
-    if (c) q.set("campaign", c);
-    if (w) q.set("for", w);
-    const qs = q.toString();
-    return `/${locale}/admin/patient-enquiries${qs ? `?${qs}` : ""}`;
-  };
-
   return (
     <div className="flex flex-col gap-5">
       <div>
@@ -89,41 +75,15 @@ export default async function Page({
 
       {ready && (
         <>
-          <div className="flex flex-wrap items-center gap-2">
-            <FilterLink href={href({ status: "" })} active={active === "all"}>
-              All{total > 0 && ` · ${total}`}
-            </FilterLink>
-            {INTEREST_STATUSES.map((s) => (
-              <FilterLink key={s} href={href({ status: s })} active={active === s}>
-                {STATUS_LABEL[s]}
-                {counts[s] ? ` · ${counts[s]}` : ""}
-              </FilterLink>
-            ))}
-            <span className="flex flex-wrap items-center gap-2">
-              <span className="text-[13px] text-ink-secondary">For</span>
-              <FilterLink href={href({ for: "" })} active={!activeFor}>
-                Anyone
-              </FilterLink>
-              {ENQUIRY_FOR.map((o) => (
-                <FilterLink key={o.value} href={href({ for: o.value })} active={activeFor === o.value}>
-                  {o.label}
-                </FilterLink>
-              ))}
-            </span>
-            {campaigns.length > 0 && (
-              <span className="ms-auto flex flex-wrap items-center gap-2">
-                <span className="text-[13px] text-ink-secondary">Campaign</span>
-                <FilterLink href={href({ campaign: "" })} active={!campaign}>
-                  Any
-                </FilterLink>
-                {campaigns.map((c) => (
-                  <FilterLink key={c} href={href({ campaign: c })} active={campaign === c}>
-                    {c}
-                  </FilterLink>
-                ))}
-              </span>
-            )}
-          </div>
+          <EnquiryFilters
+            basePath={`/${locale}/admin/patient-enquiries`}
+            status={active}
+            enquiryFor={activeFor}
+            campaign={campaign}
+            campaigns={campaigns}
+            counts={counts}
+            total={total}
+          />
 
           <Card>
             <CardTitle>
@@ -137,7 +97,13 @@ export default async function Page({
                 description={
                   total === 0
                     ? "Enquiries from the patient page arrive here the moment someone sends one."
-                    : "Try a different status or campaign."
+                    : `Nothing matched ${[
+                        active !== "all" && `status “${STATUS_LABEL[active]}”`,
+                        activeFor && `for “${ENQUIRY_FOR.find((o) => o.value === activeFor)?.label}”`,
+                        campaign && `campaign “${campaign}”`,
+                      ]
+                        .filter(Boolean)
+                        .join(", ")}. Clear the filters above to see all ${total}.`
                 }
               />
             ) : (
@@ -159,26 +125,3 @@ export default async function Page({
   );
 }
 
-function FilterLink({
-  href,
-  active,
-  children,
-}: {
-  href: string;
-  active: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <Link href={href}>
-      <Chip
-        size="sm"
-        className={cn(
-          "transition-colors",
-          active ? "bg-navy text-white" : "bg-subtle text-ink-secondary hover:text-ink",
-        )}
-      >
-        {children}
-      </Chip>
-    </Link>
-  );
-}

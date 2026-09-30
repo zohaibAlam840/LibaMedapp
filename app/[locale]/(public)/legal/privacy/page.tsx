@@ -59,12 +59,25 @@ export default async function Page({
           heading: "Corridors and international transfers",
           children: (
             <>
+              {/* Names only corridors that are actually open to patients.
+                  Türkiye was removed on 30 Sep 2026: the corridor exists in
+                  the backend but is unpublished while its commercial terms are
+                  settled, and a privacy policy listing it read as though
+                  referrals already travelled that way. Israel and France are
+                  in the same position and are described generically for the
+                  same reason. Each is named here again when it opens, with its
+                  own mechanism — the wording is per corridor because the
+                  lawful basis differs by country. */}
               <p>
                 Each referral travels along a defined corridor with its own
-                lawful transfer mechanism: Israel (UK adequacy), France (EU —
-                direct transfer), Switzerland (adequacy), and Turkey
-                (KVKK-approved standard contractual clauses, notified to the
-                Turkish authority within 5 business days of signature).
+                lawful transfer mechanism. The corridor currently open to
+                patients is Switzerland, which the UK recognises as providing
+                adequate protection, so no additional safeguard is required.
+              </p>
+              <p>
+                Further corridors are in preparation and are not yet in use. We
+                will name each one here, with the mechanism that makes it
+                lawful, before any referral travels along it.
               </p>
               <p>
                 For every transfer we apply the <strong>stricter of both
