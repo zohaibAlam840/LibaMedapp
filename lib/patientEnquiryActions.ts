@@ -1,7 +1,7 @@
 "use server";
 
 import { insertInterest, isMissingTable } from "@/lib/db/patientInterest";
-import { validDestination, validOption } from "@/lib/patientInterest";
+import { SECOND_OPINION_AREA, validDestination, validOption } from "@/lib/patientInterest";
 import { getDestinationOptions } from "@/lib/db/destinations";
 import { sendEmail, siteUrl, staffInbox } from "@/lib/email";
 
@@ -146,8 +146,17 @@ export async function submitPatientEnquiryAction(
   // do not want to.
   const specialtyArea = validOption("specialtyArea", String(formData.get("specialtyArea") || ""));
   if (!specialtyArea) return reject("Please choose an area of care.", "specialtyArea");
+  // Budget is not asked for a second opinion, because the price is fixed and
+  // published. Keyed on the AREA rather than on a hidden "came from the
+  // second-opinion page" flag: the form drops the question whenever that area
+  // is chosen, including by someone who picks it from the dropdown directly,
+  // so the rule that decides whether an answer is missing has to be the same
+  // one that decided whether to ask. A hidden flag would also be a field a
+  // caller could set for themselves to skip a required question.
   const budgetBand = validOption("budgetBand", String(formData.get("budgetBand") || ""));
-  if (!budgetBand) return reject("Please choose a rough budget.", "budgetBand");
+  if (!budgetBand && specialtyArea !== SECOND_OPINION_AREA) {
+    return reject("Please choose a rough budget.", "budgetBand");
+  }
   // Consent is the lawful basis for contacting them at all, so it is a hard
   // requirement rather than a preference stored alongside the enquiry.
   if (formData.get("consentToContact") !== "on") {

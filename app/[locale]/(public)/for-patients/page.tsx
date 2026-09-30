@@ -132,7 +132,7 @@ export default async function Page({
           won&rsquo;t contact your doctor without asking you first.
         </p>
         <div className="mt-6">
-          <PatientEnquiryForm destinations={destinations} presetArea={area} />
+          <PatientEnquiryForm locale={locale} destinations={destinations} presetArea={area} />
         </div>
       </div>
 

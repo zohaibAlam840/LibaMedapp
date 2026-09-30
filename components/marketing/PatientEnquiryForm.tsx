@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
+import Link from "next/link";
 import { CheckCircle2, FileX2, TriangleAlert } from "lucide-react";
 import SubmitButton from "@/components/ui/SubmitButton";
 import Checkbox from "@/components/ui/Checkbox";
@@ -11,6 +12,7 @@ import {
   BUDGET_BANDS,
   ENQUIRY_FOR,
   FUNDING_TYPES,
+  SECOND_OPINION_AREA,
   SPECIALTY_AREAS,
   TIMEFRAMES,
   type DestinationOption,
@@ -28,9 +30,11 @@ import {
  * attach their whole medical record to a marketing form.
  */
 export default function PatientEnquiryForm({
+  locale,
   destinations,
   presetArea,
 }: {
+  locale: string;
   /**
    * Passed in rather than imported: the list is whatever is published right
    * now, which only the server knows. See lib/db/destinations.ts.
@@ -66,6 +70,19 @@ export default function PatientEnquiryForm({
   // What was typed, handed back by the action so a rejection does not empty
   // the form.
   const v = state.values ?? {};
+
+  /**
+   * Area of care is controlled, unlike the other selects, because the rest of
+   * the form depends on it: a second opinion has a fixed published price, so
+   * the budget question disappears. Someone who arrives from the
+   * second-opinion button and then changes their mind in the dropdown has to
+   * get the budget question back, which a preset alone cannot do.
+   */
+  const [area, setArea] = useState(
+    v.specialtyArea ??
+      (presetArea && SPECIALTY_AREAS.includes(presetArea as never) ? presetArea : ""),
+  );
+  const isFixedPrice = area === SECOND_OPINION_AREA;
 
 
   /**
@@ -227,10 +244,8 @@ export default function PatientEnquiryForm({
             <Select
               id="p-specialty"
               name="specialtyArea"
-              defaultValue={
-                v.specialtyArea ??
-                (presetArea && SPECIALTY_AREAS.includes(presetArea as never) ? presetArea : "")
-              }
+              value={area}
+              onChange={(e) => setArea(e.target.value)}
               required
             >
               <option value="">Select…</option>
@@ -265,7 +280,11 @@ export default function PatientEnquiryForm({
           Practicalities
         </legend>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="How would it be paid for?" htmlFor="p-funding">
+          <Field
+            label="How would it be paid for?"
+            htmlFor="p-funding"
+            hint={isFixedPrice ? "Optional — you can check with your insurer later." : undefined}
+          >
             <Select id="p-funding" name="fundingType" defaultValue={v.fundingType || "unknown"}>
               {FUNDING_TYPES.map((f) => (
                 <option key={f.value} value={f.value}>
@@ -274,20 +293,38 @@ export default function PatientEnquiryForm({
               ))}
             </Select>
           </Field>
-          <Field
-            label="Rough budget"
-            htmlFor="p-budget"
-            hint="A range is fine — it helps us point you sensibly."
-          >
-            <Select id="p-budget" name="budgetBand" defaultValue={v.budgetBand ?? ""} required>
-              <option value="">Select…</option>
-              {BUDGET_BANDS.map((b) => (
-                <option key={b} value={b}>
-                  {b}
-                </option>
-              ))}
-            </Select>
-          </Field>
+          {/* A second opinion costs a fixed, published amount, so asking which
+              £10k band someone is working to is a question with no meaning —
+              and, on a page that has just quoted the price, one that reads as
+              though we had not noticed. Replaced with the figure rather than
+              simply hidden, so the answer is still on screen. */}
+          {isFixedPrice ? (
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[13px] font-medium text-ink">Cost</span>
+              <p className="rounded-inner bg-subtle px-3.5 py-2.5 text-[14px] leading-relaxed text-ink-secondary">
+                Second opinion: fixed fees as shown on the{" "}
+                <Link href={`/${locale}/second-opinion`} className="font-medium text-accent hover:underline">
+                  second-opinion page
+                </Link>
+                .
+              </p>
+            </div>
+          ) : (
+            <Field
+              label="Rough budget"
+              htmlFor="p-budget"
+              hint="A range is fine — it helps us point you sensibly."
+            >
+              <Select id="p-budget" name="budgetBand" defaultValue={v.budgetBand ?? ""} required>
+                <option value="">Select…</option>
+                {BUDGET_BANDS.map((b) => (
+                  <option key={b} value={b}>
+                    {b}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          )}
           <Field label="When are you hoping to go?" htmlFor="p-time">
             <Select id="p-time" name="timeframe" defaultValue={v.timeframe ?? ""}>
               <option value="">Not sure</option>

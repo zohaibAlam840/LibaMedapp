@@ -70,15 +70,21 @@ export default async function Page({
       title: "Your doctor sends the records",
       body: "Your GP or consultant sends the histology report, recent scans (ideally as DICOM files), biopsy results, current medicines and treatment history directly to the tumour board.",
     },
+    // Softened on the client's instruction, 1 Oct 2026: the Monday/Tuesday/
+    // Wednesday rhythm is the board's normal working pattern, NOT a
+    // contractual commitment. The original wording read as a guarantee on a
+    // public page selling a cancer service, which is a promise nobody has
+    // made. "Usually" and "normally" are load-bearing here — do not tighten
+    // them back up without something contractual behind it.
     {
       icon: CalendarClock,
       title: "The board meets",
-      body: "Cases received by Monday morning are discussed at the board meeting on Tuesday.",
+      body: "Complete records received by Monday morning (Swiss time) are usually discussed at the board meeting that Tuesday. Incomplete records or holidays can mean a later meeting.",
     },
     {
       icon: FileText,
       title: "The report comes back",
-      body: "A written opinion is sent to your doctor, normally on the Wednesday after the meeting.",
+      body: "A written opinion is normally sent to your doctor the day after the meeting.",
     },
     {
       icon: UserRoundCheck,
@@ -247,8 +253,9 @@ export default async function Page({
         <p className="mt-2 max-w-[68ch] text-[14px] leading-relaxed text-ink-secondary">
           Refer a patient for a multidisciplinary tumour board review in Z&uuml;rich. Send
           histology, imaging (DICOM preferred), biopsy results, medicines, comorbidities,
-          family history and treatment status by Monday morning; written opinion normally
-          by Wednesday. The report is addressed to you.
+          family history and treatment status. Complete records by Monday morning (Swiss
+          time) are usually reviewed that Tuesday; written opinion normally the following
+          day. The report is addressed to you.
         </p>
         <Link
           href={`/${locale}/for-clinicians`}
