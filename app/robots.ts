@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { LOCALES } from "@/lib/i18n";
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, "");
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://www.libamed.com").replace(/\/$/, "");
 
 // Keep crawlers off the signed-in app and auth flows.
 const PRIVATE = ["account", "admin", "receiving", "referring", "introducer", "portal", "login", "register", "mfa"];
