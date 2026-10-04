@@ -22,6 +22,7 @@ export default async function PublicLayout({
     { href: "/corridors", label: t.nav.corridors },
     { href: "/pledge", label: t.nav.pledge },
     { href: "/for-clinicians", label: t.nav.forClinicians },
+    { href: "/contact", label: t.footer.contact },
   ];
 
   return (
