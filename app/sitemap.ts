@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { siteUrl } from "@/lib/site";
 import { DEFAULT_LOCALE } from "@/lib/i18n";
 import { getPublishedCorridors } from "@/lib/db/corridors";
 import { getHospitals } from "@/lib/db/hospitals";
@@ -6,7 +7,7 @@ import { getHospitals } from "@/lib/db/hospitals";
 // Public marketing pages only. English only for now: the other locales are
 // placeholders with no translations yet, so listing them would just hand
 // Google duplicate content. Signed-in app routes are excluded (see robots.ts).
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://www.libamed.com").replace(/\/$/, "");
+const SITE_URL = siteUrl();
 
 const STATIC_PATHS = [
   "",

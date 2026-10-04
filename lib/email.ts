@@ -17,9 +17,7 @@ export function emailConfigured(): boolean {
 }
 
 /** Absolute base URL for links inside emails. */
-export function siteUrl(): string {
-  return (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, "");
-}
+export { siteUrl } from "@/lib/site";
 
 interface SendArgs {
   to: string;
@@ -30,6 +28,8 @@ interface SendArgs {
   action?: { label: string; url: string };
   /** Small print under the button. */
   footnote?: string;
+  /** Where the recipient's "Reply" goes, e.g. the person who filled in a form. */
+  replyTo?: string;
 }
 
 function shell({ subject, body, action, footnote }: Omit<SendArgs, "to">): string {
@@ -64,7 +64,7 @@ function shell({ subject, body, action, footnote }: Omit<SendArgs, "to">): strin
     <div style="margin-bottom:24px;font-size:17px;font-weight:700;color:#182238">
       <span style="display:inline-block;width:28px;height:28px;line-height:28px;text-align:center;background:#3b82d6;color:#fff;border-radius:50%;font-size:12px;margin-right:8px">LM</span>LibaMed
     </div>
-    <h1 style="margin:0 0 18px;font-size:20px;line-height:1.3;color:#141b2a">${subject}</h1>
+    <h1 style="margin:0 0 18px;font-size:20px;line-height:1.3;color:#141b2a">${subject.replace(/&/g, "&amp;").replace(/</g, "&lt;")}</h1>
     ${paragraphs}${button}${foot}
   </div>
   <p style="max-width:560px;margin:16px auto 0;font-size:11px;color:#8b93a8;text-align:center">
@@ -85,6 +85,7 @@ export async function sendEmail(args: SendArgs): Promise<boolean> {
       from: FROM,
       to: args.to,
       subject: args.subject,
+      ...(args.replyTo ? { replyTo: args.replyTo } : {}),
       html: shell(args),
       text: args.body + (args.action ? `\n\n${args.action.label}: ${args.action.url}` : ""),
     });

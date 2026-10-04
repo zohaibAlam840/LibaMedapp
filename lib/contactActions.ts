@@ -9,7 +9,7 @@ import {
   type ContactStatus,
 } from "@/lib/db/contact";
 import { appendAdminAudit } from "@/lib/db/write";
-import { sendEmail, staffInbox } from "@/lib/email";
+import { sendEmail, siteUrl, staffInbox } from "@/lib/email";
 
 // Public contact form + the admin inbox that reads it.
 //
@@ -61,26 +61,47 @@ export async function sendContactMessageAction(
       console.warn("[action] contact: table missing — apply migration 005");
       return {
         error:
-          "We couldn't record your message just now. Please email us directly and we'll pick it up.",
+          "We couldn't record your message just now. Please email hello@libamed.com and we'll pick it up.",
       };
     }
     console.warn("[action] contact insert failed:", (e as Error)?.message);
     return { error: "Something went wrong sending that. Please try again." };
   }
 
+  // Both sends are best-effort and independent: the message is already stored.
   const to = staffInbox();
-  if (to) {
-    await sendEmail({
-      to,
-      subject: `Enquiry — ${subject || "Contact form"} — ${name}`,
-      body: `${name}${organisation ? ` (${organisation})` : ""} sent an enquiry via the website.
+  await Promise.all([
+    to &&
+      sendEmail({
+        to,
+        // Hitting Reply answers the sender, not the no-reply address we send as.
+        replyTo: email,
+        subject: `Enquiry — ${subject || "Contact form"} — ${name}`,
+        body: `${name}${organisation ? ` (${organisation})` : ""} sent an enquiry via the website.
 
 Reply to: ${email}
 
 ${body}`,
-      footnote: "Sent from the LibaMed contact form. The enquiry is also in Admin → Enquiries.",
-    });
-  }
+        action: { label: "Open in Admin → Enquiries", url: `${siteUrl()}/en/admin/enquiries` },
+        footnote: "Sent from the LibaMed contact form. Reply to this email to answer them directly.",
+      }),
+    // Acknowledgement to the sender. Delivers only once a domain is verified in
+    // Resend; on the shared test sender it fails quietly like any other send.
+    // It deliberately does NOT echo the message: the address is unverified, so
+    // echoing would let anyone mail arbitrary text to anyone from our domain.
+    sendEmail({
+      to: email,
+      replyTo: "hello@libamed.com",
+      subject: "We've received your message",
+      body: `Hi ${name},
+
+Thanks for getting in touch with LibaMed. We have your message and usually reply within two working days.
+
+If you need us sooner, email hello@libamed.com or call +44 7311 990430.`,
+      footnote:
+        "You are receiving this because this address was entered on the LibaMed contact form. If that wasn't you, you can ignore this email.",
+    }),
+  ]);
 
   revalidatePath("/en/admin/enquiries");
   return { ok: true };

@@ -27,8 +27,8 @@ export default function ContactForm() {
         </p>
         <p className="text-[13px] text-ink-secondary">
           It has been logged and sent to the team. We usually reply within two
-          working days. If it is urgent, say so in a follow-up and we will
-          prioritise it.
+          working days. If it is urgent, email hello@libamed.com or call
+          +44 7311 990430.
         </p>
       </div>
     );
@@ -66,6 +66,7 @@ export default function ContactForm() {
             <option value="" disabled>
               Select…
             </option>
+            <option>Interested in working with LibaMed</option>
             <option>Clinician</option>
             <option>Hospital / provider</option>
             <option>Insurer / introducer</option>

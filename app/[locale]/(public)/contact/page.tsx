@@ -1,4 +1,4 @@
-import { Building2, Clock3, Flag } from "lucide-react";
+import { Building2, Clock3, Flag, Mail, Phone } from "lucide-react";
 import { Card, CardTitle } from "@/components/ui/Card";
 import ContactForm from "@/components/marketing/ContactForm";
 
@@ -10,7 +10,8 @@ export default async function Page() {
       <div className="mb-8 max-w-2xl">
         <h1 className="text-3xl font-semibold text-ink">Contact us</h1>
         <p className="mt-2 text-[15px] text-ink-secondary">
-          For partnership, press, and general enquiries. Please don&rsquo;t send
+          Want to work with us? Get in touch for partnerships, press, and
+          general enquiries. Please don&rsquo;t send
           clinical or patient information through this form.
         </p>
       </div>
@@ -22,6 +23,26 @@ export default async function Page() {
         </Card>
 
         <div className="flex flex-col gap-4">
+          <Card className="p-5">
+            <div className="flex items-start gap-3">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent">
+                <Mail aria-hidden className="size-4.5" />
+              </span>
+              <div className="text-sm">
+                <p className="font-semibold text-ink">Get in touch directly</p>
+                <p className="mt-1 leading-relaxed text-ink-secondary">
+                  <a href="mailto:hello@libamed.com" className="text-accent hover:underline">
+                    hello@libamed.com
+                  </a>
+                  <br />
+                  <a href="tel:+447311990430" className="inline-flex items-center gap-1 text-accent hover:underline">
+                    <Phone aria-hidden className="size-3.5" />
+                    +44 7311 990430
+                  </a>
+                </p>
+              </div>
+            </div>
+          </Card>
           <Card className="p-5">
             <div className="flex items-start gap-3">
               <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent">
