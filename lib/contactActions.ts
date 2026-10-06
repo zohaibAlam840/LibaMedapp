@@ -69,7 +69,7 @@ export async function sendContactMessageAction(
   }
 
   // Both sends are best-effort and independent: the message is already stored.
-  const to = staffInbox();
+  const to = staffInbox("contact");
   await Promise.all([
     to &&
       sendEmail({

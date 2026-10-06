@@ -115,9 +115,15 @@ export async function sendEmail(args: SendArgs): Promise<boolean> {
  * So the fallback is refused rather than trusted. An unset CONTACT_INBOX is a
  * configuration gap, and a loud log is the only way it gets noticed — silently
  * "succeeding" is what hid it.
+ *
+ * The two kinds go to different people: contact-form messages to
+ * CONTACT_INBOX (hello@), patient enquiries to ENQUIRY_INBOX (admin@).
+ * ENQUIRY_INBOX falls back to CONTACT_INBOX so an unset one still reaches
+ * someone.
  */
-export function staffInbox(): string {
-  const explicit = process.env.CONTACT_INBOX?.trim();
+export function staffInbox(kind: "contact" | "enquiry"): string {
+  const explicit =
+    (kind === "enquiry" && process.env.ENQUIRY_INBOX?.trim()) || process.env.CONTACT_INBOX?.trim();
   if (explicit) return explicit;
 
   const fromAddress = FROM.match(/<(.+)>/)?.[1] ?? FROM;

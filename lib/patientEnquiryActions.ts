@@ -200,7 +200,7 @@ export async function submitPatientEnquiryAction(
   // Stored first, announced second: a mail outage costs a notification, never
   // the enquiry. The email carries NO health detail — just that one arrived and
   // where to read it. Whoever runs the inbox is not necessarily clinical.
-  const to = staffInbox();
+  const to = staffInbox("enquiry");
   if (to) {
     await sendEmail({
       to,
