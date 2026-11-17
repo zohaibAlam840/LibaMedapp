@@ -190,6 +190,25 @@ export interface DemoHospital {
   specialties: string[];
   languages: string[];
   clinicians: { name: string; role: string }[];
+  // Partner-supplied profile content (migration 010). Optional: a partner that
+  // has sent us nothing beyond the basics has none of this, and the profile
+  // simply renders without those panels.
+  /** Parent group, when the partner is a centre operating under one. */
+  affiliation?: string;
+  /** Treating sites, when the partner works from more than one address. */
+  locations?: string[];
+  /** Long-form About from the partner's own material; `intro` stays the one-liner. */
+  aboutLong?: string;
+  /** International / global-services contact. `phone` is staff-only — never rendered publicly. */
+  intlOffice?: {
+    name: string;
+    title: string;
+    phone?: string;
+    email?: string;
+    website?: string;
+  } | null;
+  /** Partner material published for download on the profile. */
+  brochures?: { title: string; url: string; source?: string }[];
 }
 
 export const DEMO_HOSPITALS: DemoHospital[] = [

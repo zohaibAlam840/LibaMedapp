@@ -23,6 +23,15 @@ Deployed to libamed.com from `main`.
 > which is then indistinguishable from an enquiry captured before the question
 > existed. That is the one thing 009 being late actually costs, and it is worth
 > running promptly because the consent wording now depends on that answer.
+>
+> **Then 010**, for the partner brochure content:
+> `supabase/migrations/010_partner_profile_content.sql` adds the profile content
+> a partner's own material carries — its numbers, centres, programmes, services
+> and patient support — loads Sheba's Global Medical Initiatives material, and
+> stages 360° Kinderwunsch Zentrum Zürich with its six named clinicians.
+> Without it, hospital profiles render exactly as they did before: the new
+> panels are simply absent, the directory keeps working, and the server log says
+> once per read which migration is missing.
 
 The August release removed invented data from the admin area and closed several
 access-control holes. **This September release wires the screens that looked
@@ -340,7 +349,39 @@ measured from their last activity, so existing cases do not all expire at once.
 
 ---
 
-## Part 10 — Known gaps (do not report these as bugs)
+## Part 10 — Partner profile content (new — migration 010)
+
+Partner brochures now have somewhere to live. A hospital profile carries the
+partner's long-form About, the numbers it leads with, its centres, its clinical
+and research programmes, what it offers a referring clinician, what a referred
+patient receives, and the brochure PDFs themselves.
+
+1. `/en/hospitals/sheba` → **About** is the longer description, **By the
+   numbers** lists eleven figures, and panels appear for *Hospitals and
+   centres*, *Clinical and research programmes*, *Services for referring
+   clinicians*, *Patient support*, *International office* and *Partner
+   materials*.
+2. Both PDFs under **Partner materials** open — they are served from
+   `/partners/sheba/`.
+3. The footnote under the side column says which parts of the page are supplied
+   by the partner and which LibaMed verifies. It should be there whenever any
+   partner content is.
+4. The **International office** panel shows Paz Gantovski's name, title, email
+   and website — and **not** the mobile number. The number is on the record for
+   staff use; publishing a direct line on a public page is a separate decision.
+5. `/en/hospitals/kinderwunsch-360` should **404**. 360° Kinderwunsch Zentrum
+   Zürich is staged unpublished until its accreditation and working languages
+   arrive; publish it from **Admin → Partner hospitals** when they do. Its six
+   named clinicians are already approved and appear the moment it is published.
+
+Ranking claims from the brochures ("Top 10 hospital in the world", "7th
+most-published institution") were deliberately left out. The countable figures
+are in; a ranking LibaMed has not sourced is not something to put in front of a
+clinician choosing where to send a patient.
+
+---
+
+## Part 11 — Known gaps (do not report these as bugs)
 
 These are not built yet, and the screens say so where they can:
 
@@ -350,6 +391,8 @@ These are not built yet, and the screens say so where they can:
 | **GMC / FCA** | Numbers stored, checked by a person — there is no public API |
 | **Per-user RLS** | Scoping is enforced in application code, not database policies |
 | **DICOM viewing** | Attach and download only — agreed out of scope for v1 |
+| **Editing partner profile content** | Brochure sections, figures and partner materials are added in the SQL editor; the admin hospital form does not edit them yet |
+| **360° Kinderwunsch Zentrum** | Accreditation, working languages and per-clinician subspecialties requested from the centre, not yet received — staged unpublished until then |
 
 ---
 
