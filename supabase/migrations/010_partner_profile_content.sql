@@ -114,7 +114,7 @@ comment on table hospital_sections is
 -- ═══════════════════════════════════════════════════════════════════════════
 
 update hospitals set
-  about_long = 'As the largest and most comprehensive medical centre in the Middle East, Sheba Medical Center combines medical excellence, innovation and research across seven hospitals and specialist centres. Sheba treats around 25,000 cancer patients a year, performs some 50,000 surgeries and delivers about 11,000 babies, and runs a quarter of all clinical research conducted in Israel in-house. Beyond its own campus, Sheba shares clinical expertise through partnerships with medical institutions, governments and organisations worldwide — the work of its Global Medical Initiatives division, which is LibaMed''s route into the hospital.',
+  about_long = 'As the largest and most comprehensive medical centre in the Middle East, Sheba Medical Center combines medical excellence, innovation and research across seven hospitals and specialist centres on a single 200-acre campus. Its work is directed at advancing patient care and pioneering new treatments that reach beyond Israel: Sheba treats around 25,000 cancer patients a year, performs some 50,000 surgeries, delivers about 11,000 babies, and conducts a quarter of all clinical research carried out in Israel in-house. Beyond its own campus, Sheba shares clinical expertise and knowledge through partnerships with medical institutions, governments and organisations worldwide, developing solutions intended to improve healthcare systems and the patients they serve. That work is run by its Global Medical Initiatives division, which is LibaMed''s route into the hospital.',
   intl_office = jsonb_build_object(
     'name',    'Paz Gantovski',
     'title',   'Director of Global Medical Initiatives',
@@ -154,7 +154,20 @@ insert into hospital_stats (hospital_id, value, label, display_order, source) va
   ('sheba','1,700+',    'Doctors',                        80, 'GMI one-pager 2026'),
   ('sheba','11,000',    'Healthcare professionals',       90, 'GMI one-pager 2026'),
   ('sheba','3,300',     'Clinical trials',               100, 'GMI one-pager 2026'),
-  ('sheba','200',       'Ph.D. research professionals',  110, 'GMI one-pager 2026')
+  ('sheba','200',       'Ph.D. research professionals',  110, 'GMI one-pager 2026'),
+  ('sheba','200',       'Acre campus',                   120, 'GMI one-pager 2026'),
+  ('sheba','$1B',       'Annual budget',                 130, 'GMI one-pager 2026')
+on conflict (hospital_id, label) do nothing;
+
+-- The brochures' ranking claims, stored but NOT published. They are part of
+-- what the partner said, so nothing is lost or silently edited out — but
+-- LibaMed has not sourced any of these rankings, and the page a clinician uses
+-- to choose a destination is the wrong place for an unsourced one. Set
+-- published = true on any of these three to show it.
+insert into hospital_stats (hospital_id, value, label, display_order, source, published) values
+  ('sheba','Top 10','Ranked among the world''s hospitals (partner claim)',        200, 'GMI one-pager 2026',     false),
+  ('sheba','7th',   'Most-published medical institution (partner claim)',          210, 'GMI division deck 2026', false),
+  ('sheba','1st',   'In Israel for publication quantity and quality (partner claim)', 220, 'GMI division deck 2026', false)
 on conflict (hospital_id, label) do nothing;
 
 insert into hospital_sections (hospital_id, kind, title, body, items, display_order, source) values
@@ -209,6 +222,13 @@ insert into hospital_sections (hospital_id, kind, title, body, items, display_or
      '200 Ph.D. researchers',
      '67 global research collaborations'
    ], 60, 'GMI division deck 2026'),
+
+  ('sheba','service','Global Medical Initiatives (GMI)',
+   'GMI is the division LibaMed works with. It extends Sheba''s expertise beyond Israel — sharing medical services, innovation and knowledge through partnerships with leading institutions, governments and organisations, and developing healthcare solutions, training programmes and collaborative projects around them.',
+   array[
+     'Mission: to expand Sheba''s medical expertise, innovation and methodologies worldwide',
+     'Vision: to position Sheba as a global hub of medical excellence, making its medical services and advanced technologies accessible internationally'
+   ], 65, 'GMI one-pager 2026'),
 
   ('sheba','service','Medical education, training & simulation',
    'Access for international medical professionals to Sheba''s specialised training programmes, workshops and research collaborations.',

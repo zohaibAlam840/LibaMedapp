@@ -178,15 +178,39 @@ export default async function Page({
 
           <Card>
             <CardTitle>Named receiving clinicians</CardTitle>
-            <div className="flex flex-col gap-3">
-              {named.map((c) => (
-                <PersonCard key={c.name} name={c.name} role={c.role} />
-              ))}
-            </div>
-            <p className="mt-3 text-xs text-ink-muted">
-              Referrals route to a named clinician&rsquo;s personal queue — never
-              a shared inbox.
-            </p>
+            {/* A partner can be published before its clinician list is
+                confirmed. Saying so is the only honest option: an empty panel
+                reads as a rendering fault, and the alternative — leaving
+                placeholder names in place — tells a referring clinician they
+                can send a patient to someone who does not exist. */}
+            {named.length > 0 ? (
+              <>
+                <div className="flex flex-col gap-3">
+                  {named.map((c) => (
+                    <PersonCard key={c.name} name={c.name} role={c.role} />
+                  ))}
+                </div>
+                <p className="mt-3 text-xs text-ink-muted">
+                  Referrals route to a named clinician&rsquo;s personal queue —
+                  never a shared inbox.
+                </p>
+              </>
+            ) : (
+              <p className="text-[15px] leading-relaxed text-ink-secondary">
+                The named specialists accepting referrals at this partner are
+                being confirmed with the hospital. Referrals always route to a
+                named clinician&rsquo;s personal queue — never a shared inbox —
+                so this list is published only once the hospital has confirmed
+                it.{" "}
+                <Link
+                  href={`/${locale}/contact`}
+                  className="font-medium text-accent hover:underline"
+                >
+                  Ask us about a case
+                </Link>{" "}
+                in the meantime.
+              </p>
+            )}
           </Card>
 
           {services.length > 0 && (

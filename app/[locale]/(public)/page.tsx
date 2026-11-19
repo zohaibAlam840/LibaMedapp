@@ -11,6 +11,7 @@ import { getPublishedCorridors } from "@/lib/db/corridors";
 import { getFeaturedDoctors } from "@/lib/db/doctors";
 import { getHospitals } from "@/lib/db/hospitals";
 import CorridorCard from "@/components/marketing/CorridorCard";
+import HospitalCard from "@/components/marketing/HospitalCard";
 import InteractiveGrid from "@/components/marketing/InteractiveGrid";
 
 // 9A · Home (spec V2 page 1) — fully localised via the dictionary.
@@ -32,6 +33,10 @@ export default async function Page({
   const featured = await getFeaturedDoctors(6);
   const hospitals = await getHospitals();
   const hospitalName = (id?: string) => hospitals.find((x) => x.id === id)?.name;
+  // `hospitals` is the whole directory, staged partners included — the corridor
+  // cards only ever read a name out of it. The band below is public-facing, so
+  // it takes the published ones alone.
+  const publishedHospitals = hospitals.filter((x) => x.published);
 
   return (
     <div>
@@ -225,6 +230,36 @@ export default async function Page({
         </Button>
         </div>
       </section>
+
+      {/* Partner hospitals — every published partner, same card as the
+          directory. The home page named the destination hospitals only in
+          passing, inside the corridor cards, so a clinician landing here had
+          no way to see who they would actually be referring to without
+          navigating away. Published partners only: the band mirrors
+          /hospitals, which is already filtered. */}
+      {publishedHospitals.length > 0 && (
+        <section className="relative overflow-hidden border-t border-line bg-card">
+          <InteractiveGrid />
+          <div className="relative mx-auto max-w-6xl px-4 py-20 md:px-8">
+            <h2 className="mb-2 text-2xl font-semibold text-ink">Partner hospitals</h2>
+            <p className="mb-8 max-w-[60ch] text-[15px] text-ink-secondary">
+              Every partner passes four-stage accreditation before a single
+              referral routes — international certification, outcome
+              transparency, a UK-standard complaints process, and clinical
+              quality audit.
+            </p>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {publishedHospitals.map((ph) => (
+                <HospitalCard key={ph.id} hospital={ph} locale={locale} />
+              ))}
+            </div>
+            <Button variant="secondary" href={`${base}/hospitals`} className="mt-6">
+              See all partner hospitals
+              <ArrowRight aria-hidden className="size-4 rtl:-scale-x-100" />
+            </Button>
+          </div>
+        </section>
+      )}
 
       {/* Featured specialists — admin-curated from /admin/clinicians */}
       {featured.length > 0 && (
