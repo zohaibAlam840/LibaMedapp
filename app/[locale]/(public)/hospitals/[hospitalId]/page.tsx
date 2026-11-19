@@ -23,6 +23,7 @@ import {
   sectionsOfKind,
   type HospitalSection,
 } from "@/lib/db/hospitalContent";
+import { getPartnerImages } from "@/lib/partnerImages";
 
 // 9A · Hospital profile (#6) — data-driven template (design spec §3.6):
 // header + accreditation + specialty taxonomy tags + languages + named clinicians.
@@ -72,6 +73,7 @@ export default async function Page({
   const brochures = h.brochures ?? [];
   const office = h.intlOffice;
   const locations = h.locations ?? [];
+  const { feature, credit } = getPartnerImages(hospitalId);
   // Any partner-supplied panel on the page earns the attribution note.
   const partnerContent =
     stats.length > 0 || sections.length > 0 || Boolean(h.aboutLong);
@@ -222,6 +224,25 @@ export default async function Page({
         </div>
 
         <div className="flex flex-col gap-5">
+          {/* Partner photography. Portrait, so it leads the narrow column
+              rather than stretching across the page as a hero would. */}
+          {feature && (
+            <figure className="overflow-hidden rounded-card bg-card shadow-card">
+              {/* eslint-disable-next-line @next/next/no-img-element -- static
+                  partner asset; next/image would add a loader for one file. */}
+              <img
+                src={feature.src}
+                alt={feature.alt}
+                className="aspect-4/5 w-full object-cover"
+              />
+              {credit && (
+                <figcaption className="px-4 py-3 text-xs text-ink-muted">
+                  {credit}
+                </figcaption>
+              )}
+            </figure>
+          )}
+
           {h.languages.length > 0 && (
             <Card>
               <CardTitle className="mb-3">Languages</CardTitle>
