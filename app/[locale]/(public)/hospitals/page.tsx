@@ -8,6 +8,18 @@ import { getHospitals } from "@/lib/db/hospitals";
 // (admin controls this via the publish toggle on /admin/hospitals) — so this
 // page can legitimately be empty, and says so rather than rendering a bare
 // heading over nothing.
+
+// Rendered per request, not prerendered at build time.
+//
+// This page was static, and that cost us a live regression: a directory read
+// that came back empty during one Vercel build was frozen into the HTML, and
+// libamed.com told every visitor "No partners published yet" while three
+// published partners sat in the database. A marketing page whose whole job is
+// to list partners must not be able to outlive the data it lists — and the
+// same staleness hid an admin publish until the next deploy. The read is one
+// indexed query against a handful of rows; serving it per request is cheaper
+// than being wrong in public.
+export const dynamic = "force-dynamic";
 export default async function Page({
   params,
 }: {

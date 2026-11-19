@@ -15,6 +15,13 @@ import HospitalCard from "@/components/marketing/HospitalCard";
 import InteractiveGrid from "@/components/marketing/InteractiveGrid";
 
 // 9A · Home (spec V2 page 1) — fully localised via the dictionary.
+
+// Rendered per request, for the same reason as the partner directory: the home
+// page now lists corridors, partner hospitals and featured specialists, all
+// read from the database. Prerendered, a single failed read at build time is
+// published as fact until the next deploy — which is exactly how the partner
+// band came to be empty on the live site while three partners were published.
+export const dynamic = "force-dynamic";
 const VALUE_ICONS = [Stethoscope, ShieldCheck, Lock];
 const SECURITY_ICONS = [Lock, ShieldCheck, Globe2];
 
