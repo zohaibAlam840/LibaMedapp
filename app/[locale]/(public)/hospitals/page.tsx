@@ -2,7 +2,7 @@ import { ArrowRight, Building2 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import EmptyState from "@/components/ui/EmptyState";
 import HospitalCard from "@/components/marketing/HospitalCard";
-import { getHospitals } from "@/lib/db/hospitals";
+import { getHospitals, isPubliclyListed } from "@/lib/db/hospitals";
 
 // 9A · Partner hospitals list (#5). Public site shows only published partners
 // (admin controls this via the publish toggle on /admin/hospitals) — so this
@@ -27,7 +27,7 @@ export default async function Page({
 }) {
   const { locale } = await params;
   const base = `/${locale}`;
-  const hospitals = (await getHospitals()).filter((h) => h.published);
+  const hospitals = (await getHospitals()).filter(isPubliclyListed);
 
   return (
     <div>

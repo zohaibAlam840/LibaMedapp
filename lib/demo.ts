@@ -185,6 +185,9 @@ export interface DemoHospital {
    *  partner is only advertised once it's contracted and accepting referrals. */
   published: boolean;
   corridorLabel: string;
+  /** Whether this hospital's corridor is itself published. A partner is only
+   *  advertised when BOTH are on — see isPubliclyListed in lib/db/hospitals. */
+  corridorPublished?: boolean;
   intro: string;
   accreditation: { name: string; expires: string }[];
   specialties: string[];

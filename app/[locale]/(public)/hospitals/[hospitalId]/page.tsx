@@ -14,7 +14,7 @@ import Avatar from "@/components/ui/Avatar";
 import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
 import PersonCard from "@/components/ui/PersonCard";
-import { getHospital } from "@/lib/db/hospitals";
+import { getHospital, isPubliclyListed } from "@/lib/db/hospitals";
 import { getHospitalDoctors } from "@/lib/db/doctors";
 import { getCorridors } from "@/lib/db/corridors";
 import {
@@ -50,7 +50,10 @@ export default async function Page({
   // precisely because its fee terms are still open — so serving one unlisted
   // but reachable announced a commercial relationship that does not exist yet,
   // to anyone guessing the slug or following a crawler.
-  if (!h || !h.published) notFound();
+  // The corridor counts too: withdrawing one takes its partners off the
+  // directory, and a profile left reachable by direct URL would still be
+  // advertising a route we have stopped offering.
+  if (!h || !isPubliclyListed(h)) notFound();
   // Admin-approved doctors (migration 002); falls back to the hospital record's
   // own clinician list when the directory hasn't been populated yet.
   const doctors = await getHospitalDoctors(hospitalId);

@@ -420,11 +420,13 @@ export async function updateCorridorAction(formData: FormData): Promise<void> {
       `${patch.label || id} · ${patch.published ? "published" : "hidden"} · partner: ${patch.primary_hospital_id ?? "none"}`,
     );
     revalidatePath(`/${locale}/admin/corridors`);
-    revalidatePath(`/${locale}`);
-    revalidatePath(`/${locale}/hospitals`);
-    // The public corridor cards name the partner hospital, so they have to be
-    // rebuilt too or the old name survives the change.
-    revalidatePath(`/${locale}/corridors`);
+    // "layout" scope, not a list of pages: publishing or withdrawing a
+    // corridor changes the PUBLIC LAYOUT (the Corridors nav link appears and
+    // disappears with it), and it changes which partners the directory, the
+    // home band and each profile may list. Naming pages one by one left the
+    // prerendered marketing pages — /specialties, /pledge, /faq, the legal
+    // pages — carrying a nav from the last deploy.
+    revalidatePath(`/${locale}`, "layout");
   } catch (e) {
     console.warn("[action] updateCorridor failed:", (e as Error)?.message);
   }

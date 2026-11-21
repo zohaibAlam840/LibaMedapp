@@ -13,7 +13,7 @@ function configured(): boolean {
 // affiliation … brochures arrive with migration 010 (partner brochure content).
 const HOSPITAL_COLS =
   "id, name, city, country, published, intro, accreditation, specialties, languages, clinicians, " +
-  "affiliation, locations, about_long, intl_office, brochures, corridors(label)";
+  "affiliation, locations, about_long, intl_office, brochures, corridors(label, published)";
 
 // Pre-010 column set. Selecting a column that does not exist makes PostgREST
 // fail the whole query, which would blank the directory on any deployment that
@@ -51,7 +51,7 @@ interface HospitalRow {
   about_long?: string | null;
   intl_office?: DemoHospital["intlOffice"];
   brochures?: DemoHospital["brochures"] | null;
-  corridors: { label: string } | null;
+  corridors: { label: string; published?: boolean } | null;
 }
 
 function mapHospital(r: HospitalRow): DemoHospital {
@@ -62,6 +62,10 @@ function mapHospital(r: HospitalRow): DemoHospital {
     country: r.country,
     published: r.published,
     corridorLabel: r.corridors?.label ?? "",
+    // Absent on the pre-002 column set (HOSPITAL_COLS_BASE has no published
+    // column to read) — an unknown corridor is treated as published so an
+    // older deployment keeps listing its partners.
+    corridorPublished: r.corridors?.published ?? true,
     intro: r.intro ?? "",
     accreditation: r.accreditation ?? [],
     specialties: r.specialties ?? [],
@@ -114,4 +118,24 @@ export async function getHospital(id: string): Promise<DemoHospital | null> {
     }
   }
   return null;
+}
+
+/**
+ * Whether a partner may appear on the public site.
+ *
+ * TWO switches, both of which must be on: the hospital's own publish toggle
+ * (Admin → Hospitals) and its corridor's (Admin → Corridors). Hiding a
+ * corridor used to leave its hospitals on the directory still advertising
+ * "UK → Switzerland" — a corridor a visitor could no longer find anywhere,
+ * because /corridors had stopped listing it. The corridor carries the
+ * data-residency and transfer-basis wording that makes a partner referable,
+ * so a partner whose corridor is withdrawn is not one we can route to, and
+ * the directory should not offer it.
+ *
+ * Kept here, beside the query, because the directory, the home-page band and
+ * the profile page all have to agree — three copies of `h.published` would
+ * drift the first time one of them changed.
+ */
+export function isPubliclyListed(h: DemoHospital): boolean {
+  return h.published && h.corridorPublished !== false;
 }

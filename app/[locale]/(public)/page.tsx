@@ -9,7 +9,7 @@ import Avatar from "@/components/ui/Avatar";
 import { getDictionary } from "@/lib/dictionaries";
 import { getPublishedCorridors } from "@/lib/db/corridors";
 import { getFeaturedDoctors } from "@/lib/db/doctors";
-import { getHospitals } from "@/lib/db/hospitals";
+import { getHospitals, isPubliclyListed } from "@/lib/db/hospitals";
 import CorridorCard from "@/components/marketing/CorridorCard";
 import HospitalCard from "@/components/marketing/HospitalCard";
 import InteractiveGrid from "@/components/marketing/InteractiveGrid";
@@ -43,7 +43,7 @@ export default async function Page({
   // `hospitals` is the whole directory, staged partners included — the corridor
   // cards only ever read a name out of it. The band below is public-facing, so
   // it takes the published ones alone.
-  const publishedHospitals = hospitals.filter((x) => x.published);
+  const publishedHospitals = hospitals.filter(isPubliclyListed);
 
   return (
     <div>

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { getDictionary } from "@/lib/dictionaries";
+import { getPublishedCorridors } from "@/lib/db/corridors";
 
 // Marketing-site footer: a dark call-to-action card overlapping the top edge,
 // three columns of links over an oversized ghosted wordmark, then a bottom bar
@@ -15,6 +16,8 @@ import { getDictionary } from "@/lib/dictionaries";
 export default async function PublicFooter({ locale }: { locale: string }) {
   const base = `/${locale}`;
   const t = getDictionary(locale);
+  // Same rule as the header: no published corridor, no link to the empty page.
+  const corridorsPublished = (await getPublishedCorridors()).length > 0;
 
   // Three unlabelled columns, as in the reference. Unlabelled is not only a
   // style choice: headings would mean four new strings to translate into fr,
@@ -24,7 +27,7 @@ export default async function PublicFooter({ locale }: { locale: string }) {
       { href: "/how-it-works", label: t.nav.howItWorks },
       { href: "/specialties", label: t.nav.specialties },
       { href: "/hospitals", label: t.nav.hospitals },
-      { href: "/corridors", label: t.nav.corridors },
+      ...(corridorsPublished ? [{ href: "/corridors", label: t.nav.corridors }] : []),
       { href: "/pledge", label: t.nav.pledge },
     ],
     [
